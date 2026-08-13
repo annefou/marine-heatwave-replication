@@ -7,13 +7,18 @@
 #   snakemake --cores 1                  # run everything
 #   snakemake --cores 1 -n               # dry run
 #
-# Runtime is dominated by two stages and both are long:
-#   01_data_download  ~1 h   (streams ~2.65 TB decoded from the CMEMS ARCO store)
-#   03_analysis       ~3 h   (~16 core-hours of MHW detection, 6 workers)
+# Runtime is dominated by two stages and both are long (measured on 8 cores /
+# 15 GB, 1° global):
+#   01_data_download  ~55 min  (streams ~2.65 TB decoded from the CMEMS ARCO store)
+#   03_analysis       ~1.3 h   (~6.7 core-hours of MHW detection, 5 workers)
+# Both resume: 01 skips bands already in data/raw/bands_<res>deg/, 03 skips
+# latitude blocks already in results/blocks_<res>deg/.
 # Configure with environment variables — see the notebook headers:
 #   MHW_TARGET_RES_DEG (default 1.0)   analysis grid
 #   MHW_LON_BAND_STRIDE (default 1)    1 = full global coverage
 #   MHW_WORKERS / MHW_LAT_BLOCK        parallelism vs memory in 03
+# MHW_WORKERS x per-block peak RSS must fit in RAM, or the pool is OOM-killed:
+# measure with `pixi run python scripts/probe_block.py 90 91` before raising it.
 
 import os
 
