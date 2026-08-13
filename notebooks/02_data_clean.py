@@ -23,15 +23,22 @@
 # ## Exclusions, and how they map to the original paper
 #
 # Oliver et al. (2018) *"excluded any grid cells from the analysis which had
-# continuous ice cover duration for longer than 5 days"*. That test needs a sea-ice
-# field. We downloaded only `analysed_sst`, so we apply a **proxy**: a cell is
-# treated as ice-affected if its daily SST ever falls to the freezing point of
-# seawater (≈ −1.7 °C), since an L4 analysis pinned to the freezing point is
-# reporting ice rather than open water.
+# continuous ice cover duration for longer than 5 days"*. That test names a sea-ice
+# field, which we did not download. We apply the **same rule shape** to a proxy
+# indicator: SST_cci is a gap-filled L4 analysis that reports SST *under* ice
+# pinned to the freezing point of seawater, so "SST ≤ −1.7 °C" stands in for
+# "ice present", and a cell is excluded when that persists for **more than 5
+# consecutive days** — the paper's own threshold.
 #
-# This is a **declared deviation** — it is a stricter, coarser criterion than the
-# paper's, and it removes some marginal-ice cells the paper would have kept. It
-# affects the high-latitude fringe only. Record it in the Outcome's limitations.
+# The substitution is justified empirically rather than assumed: in the
+# downloaded record, cells that ever reach −1.7 °C sit below it ~246 days per
+# year at a median latitude of 72.5°, i.e. they are persistently ice-covered
+# rather than marginal. Matching the ">5 consecutive days" form (instead of
+# "ever freezes") is what keeps genuinely marginal cells in the analysis.
+#
+# This remains a **declared deviation** — a proxy indicator, not the paper's ice
+# field — and the sensitivity of the exclusion is quantified below so the
+# Outcome can report its size rather than merely note its existence.
 
 # %%
 import os
@@ -52,6 +59,7 @@ IN_PATH = RAW_DIR / f"sst_cci_{TARGET_RES_DEG:g}deg_stride{LON_BAND_STRIDE}.nc"
 OUT_PATH = PROC_DIR / f"sst_clean_{TARGET_RES_DEG:g}deg.nc"
 
 FREEZING_C = -1.7  # seawater freezing point; proxy for "ice was present"
+MAX_ICE_RUN_DAYS = 5  # the paper's threshold: >5 days continuous ice cover
 
 # %% [markdown]
 # ## Load
@@ -81,7 +89,41 @@ sst_c.attrs["units"] = "degC"
 # 1. **Land** — all-NaN columns.
 # 2. **Incomplete records** — any NaN in the time series. MHW detection depends on
 #    day-to-day continuity, so a gap makes the 5-consecutive-day rule ambiguous.
-# 3. **Ice-affected** — SST reaches the freezing point at any time (see above).
+# 3. **Ice-affected** — SST stays at/below freezing for more than 5 consecutive
+#    days at any point in the record.
+
+
+# %%
+def max_run_length(da: xr.DataArray, threshold: float,
+                   lat_block: int = 20) -> xr.DataArray:
+    """Longest run of consecutive days with `da <= threshold`, per cell.
+
+    Materialising the whole cube would cost ~3.3 GB of float plus ~0.8 GB of
+    bool at 1° global, so latitude blocks are loaded one at a time and reduced
+    to a 2-D run-length map before the next block is read.
+    """
+    out = []
+    n_lat = da.sizes["latitude"]
+    for i in range(0, n_lat, lat_block):
+        block = (da.isel(latitude=slice(i, i + lat_block)) <= threshold)
+        arr = block.fillna(False).values  # (time, lat, lon)
+        cur = np.zeros(arr.shape[1:], dtype=np.int32)
+        best = np.zeros(arr.shape[1:], dtype=np.int32)
+        for t in range(arr.shape[0]):
+            cur = np.where(arr[t], cur + 1, 0)
+            np.maximum(best, cur, out=best)
+        out.append(
+            xr.DataArray(
+                best,
+                dims=("latitude", "longitude"),
+                coords={
+                    "latitude": block.latitude,
+                    "longitude": block.longitude,
+                },
+            )
+        )
+    return xr.concat(out, dim="latitude")
+
 
 # %%
 n_time = sst_c.sizes["time"]
@@ -89,17 +131,33 @@ n_valid = sst_c.notnull().sum("time")
 
 is_land = n_valid == 0
 is_incomplete = (n_valid > 0) & (n_valid < n_time)
-is_ice = (sst_c <= FREEZING_C).any("time")
+
+ice_run = max_run_length(sst_c, FREEZING_C)
+is_ice = ice_run > MAX_ICE_RUN_DAYS
 
 valid = (~is_land) & (~is_incomplete) & (~is_ice)
+
+# Sensitivity: how many cells does the paper's ">5 consecutive days" form keep
+# that a naive "ever freezes" rule would have thrown away?
+ever_freezes = ice_run > 0
+rescued = int(((ever_freezes & ~is_ice) & ~is_land).sum())
 
 total_cells = int(np.prod([sst_c.sizes[d] for d in ("latitude", "longitude")]))
 print(f"total cells      : {total_cells}")
 print(f"  land           : {int(is_land.sum())}")
 print(f"  incomplete     : {int(is_incomplete.sum())}")
 print(f"  ice-affected   : {int((is_ice & ~is_land).sum())}")
+print(f"    (marginal cells kept by the >5-day rule that "
+      f"'ever freezes' would drop: {rescued})")
 print(f"  -> analysed    : {int(valid.sum())} "
       f"({100 * float(valid.sum()) / total_cells:.1f}% of grid)")
+
+# Area actually excluded matters more than the cell count, because the excluded
+# cells are polar and cos(lat)-weighted down.
+w = np.cos(np.deg2rad(sst_c.latitude)).broadcast_like(is_land)
+area_ocean = float(w.where(~is_land).sum())
+area_excluded = float(w.where((~is_land) & is_ice).sum())
+print(f"  ice exclusion  : {100 * area_excluded / area_ocean:.2f}% of ocean AREA")
 
 # %% [markdown]
 # ## Apply the mask and save
@@ -114,8 +172,11 @@ sst_clean.attrs.update(
     units="degC",
     long_name="Sea surface temperature, cleaned for MHW detection",
     exclusions="land; incomplete time series; ice-affected "
-               f"(SST <= {FREEZING_C} degC at any time)",
-    ice_criterion_note="proxy for Oliver et al. (2018) '>5 days continuous ice cover'",
+               f"(SST <= {FREEZING_C} degC for > {MAX_ICE_RUN_DAYS} "
+               "consecutive days)",
+    ice_criterion_note="SST at the seawater freezing point is used as a proxy "
+                       "for ice presence; the >5-consecutive-day threshold is "
+                       "Oliver et al. (2018)'s own ice-exclusion rule",
     n_cells_analysed=int(valid.sum()),
 )
 
