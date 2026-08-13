@@ -66,3 +66,4 @@ data/raw/*.nc
 data/processed/
 data/raw/download.log
 results/*.nc
+results/logs/
