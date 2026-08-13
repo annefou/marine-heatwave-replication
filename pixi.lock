@@ -464,7 +464,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zarr-3.3.0-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zict-3.0.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - pypi: git+https://github.com/coecms/xmhw.git?rev=master#1006312ae693e8aef8bd3706b9afb431eca564a5
+      - pypi: git+https://github.com/coecms/xmhw.git?rev=1006312ae693e8aef8bd3706b9afb431eca564a5#1006312ae693e8aef8bd3706b9afb431eca564a5
       osx-arm64:
       - conda: https://conda.anaconda.org/bioconda/noarch/snakemake-9.21.0-hdfd78af_0.conda
       - conda: https://conda.anaconda.org/bioconda/noarch/snakemake-interface-common-1.23.0-pyh84498cf_0.conda
@@ -841,7 +841,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zlib-1.3.2-h8088a28_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zlib-ng-2.3.3-hed4e4f5_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hbf9d68e_6.conda
-      - pypi: git+https://github.com/coecms/xmhw.git?rev=master#1006312ae693e8aef8bd3706b9afb431eca564a5
+      - pypi: git+https://github.com/coecms/xmhw.git?rev=1006312ae693e8aef8bd3706b9afb431eca564a5#1006312ae693e8aef8bd3706b9afb431eca564a5
       win-64:
       - conda: https://conda.anaconda.org/bioconda/noarch/snakemake-9.21.0-hdfd78af_0.conda
       - conda: https://conda.anaconda.org/bioconda/noarch/snakemake-interface-common-1.23.0-pyh84498cf_0.conda
@@ -1238,7 +1238,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-1.3.2-hfd05255_2.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-ng-2.3.3-h0261ad2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_6.conda
-      - pypi: git+https://github.com/coecms/xmhw.git?rev=master#1006312ae693e8aef8bd3706b9afb431eca564a5
+      - pypi: git+https://github.com/coecms/xmhw.git?rev=1006312ae693e8aef8bd3706b9afb431eca564a5#1006312ae693e8aef8bd3706b9afb431eca564a5
   docs:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -1690,7 +1690,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zarr-3.3.0-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zict-3.0.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - pypi: git+https://github.com/coecms/xmhw.git?rev=master#1006312ae693e8aef8bd3706b9afb431eca564a5
+      - pypi: git+https://github.com/coecms/xmhw.git?rev=1006312ae693e8aef8bd3706b9afb431eca564a5#1006312ae693e8aef8bd3706b9afb431eca564a5
       osx-arm64:
       - conda: https://conda.anaconda.org/bioconda/noarch/snakemake-9.21.0-hdfd78af_0.conda
       - conda: https://conda.anaconda.org/bioconda/noarch/snakemake-interface-common-1.23.0-pyh84498cf_0.conda
@@ -2070,7 +2070,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zlib-1.3.2-h8088a28_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zlib-ng-2.3.3-hed4e4f5_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hbf9d68e_6.conda
-      - pypi: git+https://github.com/coecms/xmhw.git?rev=master#1006312ae693e8aef8bd3706b9afb431eca564a5
+      - pypi: git+https://github.com/coecms/xmhw.git?rev=1006312ae693e8aef8bd3706b9afb431eca564a5#1006312ae693e8aef8bd3706b9afb431eca564a5
       win-64:
       - conda: https://conda.anaconda.org/bioconda/noarch/snakemake-9.21.0-hdfd78af_0.conda
       - conda: https://conda.anaconda.org/bioconda/noarch/snakemake-interface-common-1.23.0-pyh84498cf_0.conda
@@ -2469,7 +2469,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-1.3.2-hfd05255_2.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-ng-2.3.3-h0261ad2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_6.conda
-      - pypi: git+https://github.com/coecms/xmhw.git?rev=master#1006312ae693e8aef8bd3706b9afb431eca564a5
+      - pypi: git+https://github.com/coecms/xmhw.git?rev=1006312ae693e8aef8bd3706b9afb431eca564a5#1006312ae693e8aef8bd3706b9afb431eca564a5
   tests:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -2926,7 +2926,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zarr-3.3.0-pyhc364b38_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zict-3.0.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - pypi: git+https://github.com/coecms/xmhw.git?rev=master#1006312ae693e8aef8bd3706b9afb431eca564a5
+      - pypi: git+https://github.com/coecms/xmhw.git?rev=1006312ae693e8aef8bd3706b9afb431eca564a5#1006312ae693e8aef8bd3706b9afb431eca564a5
       osx-arm64:
       - conda: https://conda.anaconda.org/bioconda/noarch/snakemake-9.21.0-hdfd78af_0.conda
       - conda: https://conda.anaconda.org/bioconda/noarch/snakemake-interface-common-1.23.0-pyh84498cf_0.conda
@@ -3311,7 +3311,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zlib-1.3.2-h8088a28_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zlib-ng-2.3.3-hed4e4f5_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hbf9d68e_6.conda
-      - pypi: git+https://github.com/coecms/xmhw.git?rev=master#1006312ae693e8aef8bd3706b9afb431eca564a5
+      - pypi: git+https://github.com/coecms/xmhw.git?rev=1006312ae693e8aef8bd3706b9afb431eca564a5#1006312ae693e8aef8bd3706b9afb431eca564a5
       win-64:
       - conda: https://conda.anaconda.org/bioconda/noarch/snakemake-9.21.0-hdfd78af_0.conda
       - conda: https://conda.anaconda.org/bioconda/noarch/snakemake-interface-common-1.23.0-pyh84498cf_0.conda
@@ -3715,7 +3715,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-1.3.2-hfd05255_2.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-ng-2.3.3-h0261ad2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_6.conda
-      - pypi: git+https://github.com/coecms/xmhw.git?rev=master#1006312ae693e8aef8bd3706b9afb431eca564a5
+      - pypi: git+https://github.com/coecms/xmhw.git?rev=1006312ae693e8aef8bd3706b9afb431eca564a5#1006312ae693e8aef8bd3706b9afb431eca564a5
 packages:
 - conda: https://conda.anaconda.org/bioconda/noarch/snakemake-9.21.0-hdfd78af_0.conda
   sha256: 0dad21d5186f1a75ac2beaf1f2e2dc07bbd96108bd4098c732e548c903421717
@@ -15930,7 +15930,7 @@ packages:
   purls: []
   size: 388453
   timestamp: 1764777142545
-- pypi: git+https://github.com/coecms/xmhw.git?rev=master#1006312ae693e8aef8bd3706b9afb431eca564a5
+- pypi: git+https://github.com/coecms/xmhw.git?rev=1006312ae693e8aef8bd3706b9afb431eca564a5#1006312ae693e8aef8bd3706b9afb431eca564a5
   name: xmhw
   version: 1.0.0
   requires_dist:
