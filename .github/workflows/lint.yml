@@ -94,13 +94,34 @@ jobs:
             bad "jupyter-book.yml does not set BASE_URL. MyST ignores base_url in myst.yml, so without the env var every link on the deployed site breaks — docs/cicd-conventions.md § BASE_URL."
           fi
 
-          # docs/cicd-conventions.md:106,245 — executing a hardcoded list means a
-          # newly added notebook is silently never run.
-          if grep -q "notebooks/\*.ipynb" .github/workflows/jupyter-book.yml; then
-            note "jupyter-book.yml executes notebooks via glob"
-          else
-            bad "jupyter-book.yml does not execute notebooks/*.ipynb via a glob. A hardcoded list silently skips newly added notebooks — docs/cicd-conventions.md § Notebook execution."
-          fi
+          # This repo's pipeline is ~8 core-hours and needs Copernicus
+          # credentials, so the book renders COMMITTED executed notebooks rather
+          # than executing them in CI (see jupyter-book.yml). The check that
+          # matters is therefore no longer "does it execute via a glob" but
+          # "is every .py accompanied by a committed .ipynb" — an unexecuted
+          # notebook is the same empty-book failure, reached a different way.
+          # Both loops below glob, so a newly added notebook is still picked up.
+          for py in notebooks/*.py; do
+            [ -e "$py" ] || continue
+            nb="${py%.py}.ipynb"
+            if [ -f "$nb" ]; then
+              note "$nb is committed alongside $py"
+            else
+              bad "$nb is missing. The Jupyter Book renders committed executed notebooks; without it the book builds with empty cells. Regenerate with 'jupytext --to notebook --execute $py' and commit it."
+            fi
+          done
+
+          # The committed .ipynb must actually carry outputs — committing an
+          # unexecuted notebook passes the existence check above but still
+          # renders an empty book.
+          for nb in notebooks/*.ipynb; do
+            [ -e "$nb" ] || continue
+            if grep -q '"outputs": \[\]' "$nb" && ! grep -q '"output_type"' "$nb"; then
+              bad "$nb has no cell outputs — it was converted but never executed. Run 'jupytext --to notebook --execute ${nb%.ipynb}.py' and commit the result."
+            else
+              note "$nb carries executed outputs"
+            fi
+          done
 
           echo "--- placeholder tokens ---"
 

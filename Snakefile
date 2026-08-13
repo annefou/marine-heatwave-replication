@@ -33,9 +33,27 @@ STRIDE = os.environ.get("MHW_LON_BAND_STRIDE", "1")
 
 RAW_SST = f"{DATA}/raw/sst_cci_{RES}deg_stride{STRIDE}.nc"
 CLEAN_SST = f"{DATA}/processed/sst_clean_{RES}deg.nc"
-ANNUAL = f"{RESULTS}/mhw_annual_{RES}deg.nc"
-COMPARISON = f"{RESULTS}/headline_comparison.json"
-MAIN_FIG = f"{FIGURES}/main_result.png"
+# Only the full configuration produces the reported result, so only it claims
+# the canonical artefact names. Any partial/smoke run writes self-describing
+# files instead (and a watermarked figure), so it can never overwrite the
+# numbers the FORRT Outcome quotes. Keep in step with 03_analysis.py and
+# 04_figures.py: if these names change, change them there too.
+PERIOD_END = os.environ.get("MHW_PERIOD_END", "2016-12-31")
+IS_FULL_REPLICATION = (RES, STRIDE, PERIOD_END) == ("1", "1", "2016-12-31")
+_TAG = f"partial_run_{RES}deg_stride{STRIDE}"
+
+ANNUAL = (
+    f"{RESULTS}/mhw_annual_{RES}deg.nc" if IS_FULL_REPLICATION
+    else f"{RESULTS}/{_TAG}_annual.nc"
+)
+COMPARISON = (
+    f"{RESULTS}/headline_comparison.json" if IS_FULL_REPLICATION
+    else f"{RESULTS}/{_TAG}_comparison.json"
+)
+MAIN_FIG = (
+    f"{FIGURES}/main_result.png" if IS_FULL_REPLICATION
+    else f"{FIGURES}/{_TAG}.png"
+)
 
 
 rule all:

@@ -22,10 +22,29 @@ on:
 #
 # To enable one: uncomment `env:` and the line(s) you need here, and the
 # matching step further down.
-#
-# env:
-#   COPERNICUS_CREDENTIALS_BASE64: ${{ secrets.COPERNICUS_CREDENTIALS_BASE64 }}
+env:
+  COPERNICUS_CREDENTIALS_BASE64: ${{ secrets.COPERNICUS_CREDENTIALS_BASE64 }}
 #   CDSAPI_KEY: ${{ secrets.CDSAPI_KEY }}
+
+  # ----- smoke configuration -----
+  # The real replication is ~8 core-hours (55 min of streaming + ~6.7 core-hours
+  # of detection), so CI runs the SAME code over a coarser grid. This proves the
+  # pipeline still runs end-to-end; it does NOT reproduce the result. The book
+  # renders the committed executed notebooks from a real 1° run instead.
+  #
+  # Why 3° and not 10°: 01_data_download derives
+  #   COARSEN    = TARGET_RES_DEG / 0.05
+  #   BAND_WIDTH = (64 // COARSEN) * COARSEN
+  # so COARSEN > 64 — i.e. any target above 3.2° — floors BAND_WIDTH to 0 and
+  # every band comes back EMPTY, with no error. 3° gives COARSEN=60, the largest
+  # value that still divides the store's 64-cell longitude chunk.
+  #
+  # Why the full 1982-2016 period: 03_analysis pins the climatology to
+  # 1983-2012. Truncating with MHW_PERIOD_END would leave the baseline period
+  # only partly covered and the thresholds meaningless, so time stays whole and
+  # only space is coarsened. Stride 8 samples every 8th longitude chunk.
+  MHW_TARGET_RES_DEG: "3"
+  MHW_LON_BAND_STRIDE: "8"
 
 jobs:
   # Unit tests for scripts/. Deliberately NOT gated on check-ready: these test
@@ -70,16 +89,20 @@ jobs:
           cache: true
 
       # ----- credentials -----
-      # To enable: add the GitHub secret, uncomment its line in the top-level
-      # `env:` block above, AND uncomment the step here. The `if:` tests `env.`,
-      # never `secrets.` — see the note on the `env:` block for why.
+      # The `if:` tests `env.`, never `secrets.` — see the note on the `env:`
+      # block above for why that spelling is the one that parses.
       #
-      # - name: Set up Copernicus Marine credentials
-      #   if: ${{ env.COPERNICUS_CREDENTIALS_BASE64 != '' && steps.guard.outputs.ready == 'true' }}
-      #   run: |
-      #     mkdir -p ~/.copernicusmarine
-      #     echo "${COPERNICUS_CREDENTIALS_BASE64}" | base64 -d \
-      #       > ~/.copernicusmarine/.copernicusmarine-credentials
+      # Stage 01 streams from the Copernicus Marine ARCO store, so without this
+      # secret the smoke run cannot authenticate. It is skipped rather than
+      # failed when the secret is absent (forks, and before the secret is set),
+      # and the guard step below then reports the pipeline as unverified instead
+      # of letting the job pass silently green.
+      - name: Set up Copernicus Marine credentials
+        if: ${{ env.COPERNICUS_CREDENTIALS_BASE64 != '' && steps.guard.outputs.ready == 'true' }}
+        run: |
+          mkdir -p ~/.copernicusmarine
+          echo "${COPERNICUS_CREDENTIALS_BASE64}" | base64 -d \
+            > ~/.copernicusmarine/.copernicusmarine-credentials
       #
       # - name: Set up CDS credentials
       #   if: ${{ env.CDSAPI_KEY != '' && steps.guard.outputs.ready == 'true' }}
@@ -96,15 +119,30 @@ jobs:
       #     path: data/raw
       #     key: input-data-v1
 
-      - name: Run pipeline
-        if: steps.guard.outputs.ready == 'true'
-        run: pixi run snakemake --cores 1
+      # Not a reproduction of the result — a proof that the code still runs. The
+      # grid is set by MHW_TARGET_RES_DEG / MHW_LON_BAND_STRIDE in the env block
+      # at the top of this file.
+      - name: Run pipeline (coarse smoke configuration)
+        id: smoke
+        if: ${{ env.COPERNICUS_CREDENTIALS_BASE64 != '' && steps.guard.outputs.ready == 'true' }}
+        run: |
+          echo "::notice::Smoke run at ${MHW_TARGET_RES_DEG}° grid, stride ${MHW_LON_BAND_STRIDE}. This exercises the pipeline; it does not reproduce the 1° result."
+          pixi run snakemake --cores 2
+
+      # Without this the job passes green having run no pipeline at all, which
+      # reads identically to a successful verification.
+      - name: Report that the pipeline was not verified
+        if: ${{ env.COPERNICUS_CREDENTIALS_BASE64 == '' && steps.guard.outputs.ready == 'true' }}
+        run: |
+          echo "::warning::COPERNICUS_CREDENTIALS_BASE64 is not set, so the pipeline smoke run was SKIPPED — this job proves only that the repo is well-formed. Set the secret to verify the pipeline end-to-end: gh secret set COPERNICUS_CREDENTIALS_BASE64 < <(base64 -w0 ~/.copernicusmarine/.copernicusmarine-credentials)"
 
       - name: Upload results
-        if: always() && steps.guard.outputs.ready == 'true'
+        if: always() && steps.smoke.outcome == 'success'
         uses: actions/upload-artifact@v5
         with:
-          name: ci-outputs
+          # Named to make it obvious these are coarse-grid smoke outputs and not
+          # the replication's results.
+          name: smoke-run-outputs-${{ env.MHW_TARGET_RES_DEG }}deg
           path: |
             results/
             figures/

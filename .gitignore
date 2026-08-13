@@ -1,5 +1,10 @@
-# Generated notebooks (kept as jupytext .py source-of-truth)
-notebooks/*.ipynb
+# Executed notebooks ARE committed. The .py files remain the source of truth
+# (edit those), but the .ipynb carry the outputs the Jupyter Book renders.
+# The pipeline behind them is ~8 core-hours and needs Copernicus credentials, so
+# CI cannot re-execute it — the book would build with empty cells. ci.yml runs a
+# coarse smoke pipeline to prove the code still works, and a drift guard checks
+# each committed .ipynb still matches its .py. Regenerate after a real run with:
+#   pixi run jupytext --to notebook --execute notebooks/*.py
 notebooks/.ipynb_checkpoints/
 
 # MyST / Jupyter Book build output

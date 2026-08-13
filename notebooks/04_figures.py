@@ -39,12 +39,45 @@ plt.style.use("seaborn-v0_8-whitegrid")
 
 # %%
 TARGET_RES_DEG = float(os.environ.get("MHW_TARGET_RES_DEG", 1.0))
+LON_BAND_STRIDE = int(os.environ.get("MHW_LON_BAND_STRIDE", 8))
+PERIOD_END = os.environ.get("MHW_PERIOD_END", "2016-12-31")
 RESULTS_DIR = Path("../results")
 FIG_DIR = Path("../figures")
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
-res = xr.open_dataset(RESULTS_DIR / f"mhw_annual_{TARGET_RES_DEG:g}deg.nc")
-with open(RESULTS_DIR / "headline_comparison.json") as f:
+# The configuration the replication's reported result was produced with: full
+# global coverage at 1°, over Oliver et al.'s complete satellite record.
+# CI runs the same code over a coarse grid to prove it still works, and any
+# other configuration is a partial run whose numbers are NOT the result. Such a
+# run must never overwrite figures/main_result.png or be mistakable for it, so
+# it is written under a self-describing name and stamped on the face.
+FULL_CONFIG = (1.0, 1, "2016-12-31")
+IS_FULL_REPLICATION = (TARGET_RES_DEG, LON_BAND_STRIDE, PERIOD_END) == FULL_CONFIG
+FIG_PATH = FIG_DIR / (
+    "main_result.png" if IS_FULL_REPLICATION
+    else f"partial_run_{TARGET_RES_DEG:g}deg_stride{LON_BAND_STRIDE}.png"
+)
+if not IS_FULL_REPLICATION:
+    print(
+        f"NOT the full replication configuration "
+        f"({TARGET_RES_DEG:g}° grid, stride {LON_BAND_STRIDE}, to {PERIOD_END}; "
+        f"full = 1° / stride 1 / to 2016-12-31).\n"
+        f"These numbers do not reproduce the paper's statistic. "
+        f"Writing {FIG_PATH.name} instead of main_result.png."
+    )
+
+_tag = f"partial_run_{TARGET_RES_DEG:g}deg_stride{LON_BAND_STRIDE}"
+ANNUAL_PATH = RESULTS_DIR / (
+    f"mhw_annual_{TARGET_RES_DEG:g}deg.nc" if IS_FULL_REPLICATION
+    else f"{_tag}_annual.nc"
+)
+CMP_PATH = RESULTS_DIR / (
+    "headline_comparison.json" if IS_FULL_REPLICATION
+    else f"{_tag}_comparison.json"
+)
+
+res = xr.open_dataset(ANNUAL_PATH)
+with open(CMP_PATH) as f:
     cmp = json.load(f)
 
 years = res.year.values
@@ -113,8 +146,20 @@ fig.text(0.01, 0.01,
          f"{cmp['replication']['climatology_period'][1]}",
          fontsize=7, color="0.35")
 
+# A partial run's figure is visually indistinguishable from the real one, and
+# a figure outlives the shell that made it. Stamp it so it cannot be quoted by
+# mistake.
+if not IS_FULL_REPLICATION:
+    fig.text(
+        0.5, 0.5,
+        f"SMOKE RUN — NOT THE REPLICATION RESULT\n"
+        f"{TARGET_RES_DEG:g}° grid, every {LON_BAND_STRIDE}th longitude band",
+        ha="center", va="center", fontsize=20, color="crimson",
+        alpha=0.28, rotation=24, weight="bold", zorder=10,
+    )
+
 fig.tight_layout(rect=[0, 0.03, 1, 1])
-fig.savefig(FIG_DIR / "main_result.png", dpi=150, bbox_inches="tight")
+fig.savefig(FIG_PATH, dpi=150, bbox_inches="tight")
 plt.show()
 
 # %% [markdown]

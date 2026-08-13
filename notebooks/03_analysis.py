@@ -89,8 +89,32 @@ RESULTS_DIR = Path("../results")
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 IN_PATH = PROC_DIR / f"sst_clean_{TARGET_RES_DEG:g}deg.nc"
-OUT_PATH = RESULTS_DIR / f"mhw_annual_{TARGET_RES_DEG:g}deg.nc"
-SUMMARY_PATH = RESULTS_DIR / "headline_comparison.json"
+
+# Only the full configuration produces the reported result. A partial or smoke
+# run must not overwrite the artefacts the FORRT Outcome quotes its numbers
+# from, so it writes to self-describing names instead. Keep in step with the
+# matching logic in 04_figures.py and the Snakefile.
+LON_BAND_STRIDE = int(os.environ.get("MHW_LON_BAND_STRIDE", 8))
+PERIOD_END = os.environ.get("MHW_PERIOD_END", "2016-12-31")
+IS_FULL_REPLICATION = (
+    (TARGET_RES_DEG, LON_BAND_STRIDE, PERIOD_END) == (1.0, 1, "2016-12-31")
+)
+_tag = f"partial_run_{TARGET_RES_DEG:g}deg_stride{LON_BAND_STRIDE}"
+OUT_PATH = RESULTS_DIR / (
+    f"mhw_annual_{TARGET_RES_DEG:g}deg.nc" if IS_FULL_REPLICATION
+    else f"{_tag}_annual.nc"
+)
+SUMMARY_PATH = RESULTS_DIR / (
+    "headline_comparison.json" if IS_FULL_REPLICATION
+    else f"{_tag}_comparison.json"
+)
+if not IS_FULL_REPLICATION:
+    print(
+        f"NOT the full replication configuration "
+        f"({TARGET_RES_DEG:g}° grid, stride {LON_BAND_STRIDE}, to {PERIOD_END}; "
+        f"full = 1° / stride 1 / to 2016-12-31). These numbers do not reproduce "
+        f"the paper's statistic; writing {SUMMARY_PATH.name}."
+    )
 # Per-block checkpoints. This stage is many core-hours; without them an OOM kill
 # or a lost session throws away every finished block. Same atomic-rename pattern
 # as the download bands in 01.
@@ -283,9 +307,13 @@ if __name__ == "__main__":
             "software": "XMHW",
             "software_doi": "10.5281/zenodo.7662469",
             "resolution_deg": TARGET_RES_DEG,
+            "lon_band_stride": LON_BAND_STRIDE,
             "period": [int(years[0]), int(years[-1])],
             "climatology_period": CLIM_PERIOD,
             "n_cells": int(annual["mhw_days"].isel(year=0).notnull().sum()),
+            # Carried in the file itself, not just its name, so a copied or
+            # renamed artefact still says whether it is the reported result.
+            "is_full_replication": IS_FULL_REPLICATION,
         },
         "mhw_days": {
             "original_change_over_record": 30.0,
