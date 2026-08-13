@@ -77,33 +77,82 @@ toc:
   - file: notebooks/02_data_clean.ipynb
 ```
 
-The CI workflow converts `.py` to `.ipynb` with `jupytext` before MyST builds:
-
-```yaml
-- name: Convert .py notebooks to .ipynb
-  run: |
-    for nb in notebooks/*.py; do
-      pixi run jupytext --to notebook "$nb"
-    done
-```
+Where those `.ipynb` come from depends on whether CI can afford to run the
+pipeline — see the next section.
 
 ---
 
-## Always use `jupyter execute --inplace`
+## Executing notebooks in CI, or committing them
 
-Without `--inplace`, the executed notebook outputs are not written back to the `.ipynb` file. MyST then builds from a notebook with no cell outputs, producing a Jupyter Book with empty figure cells.
+The book must render notebooks that carry **outputs**. There are two ways to get
+them, and the choice turns on one question: *can CI execute the pipeline?*
+
+**Default — execute in CI.** When the pipeline is cheap and needs no
+credentials, convert and execute on every build, and keep `.ipynb` gitignored.
+Use `--inplace`, or the executed outputs are never written back to the file and
+MyST builds a book with empty figure cells:
 
 ```yaml
 - name: Execute notebooks
   run: |
     for nb in notebooks/*.ipynb; do
-      echo "::group::Executing $nb"
       pixi run jupyter execute --inplace "$nb"
-      echo "::endgroup::"
     done
 ```
 
-**Use a glob, not a hard-coded list.** A hard-coded list of notebooks silently misses any new notebook that's added without updating the workflow — the new notebook gets converted (empty) and rendered (empty). Globs prevent this.
+**When CI cannot execute the pipeline — commit the executed notebooks.** This
+repo is the second case: stage 01 needs Copernicus credentials and streams
+~2.65 TB decoded, and stage 03 is ~6.7 core-hours against a 6-hour job limit.
+Executing in CI does not produce a slow book, it produces a **failed or empty**
+one. So `notebooks/*.ipynb` are tracked, and the book renders them as committed.
+
+Committing outputs buys correctness at the cost of two new failure modes, and
+both must be mechanically closed or the book quietly rots:
+
+1. **Outputs drift from source.** Someone edits the `.py` and doesn't
+   re-execute, so the book shows results from older code. `jupyter-book.yml`
+   fails the build when a committed `.ipynb` no longer round-trips to its `.py`:
+
+   ```bash
+   pixi run jupytext --to py:percent --output - "$nb" | diff -q - "$py"
+   ```
+
+2. **Nothing proves the pipeline still runs.** With no execution in CI, the code
+   can break and every build stays green. `ci.yml` therefore runs the whole
+   Snakemake pipeline on each PR at a **coarse smoke configuration** — same
+   code, small grid — which is a claim about the *code*, never about the
+   *result*.
+
+**Use a glob, not a hard-coded list**, in whichever loop you keep. A hard-coded
+list silently misses any newly added notebook, which then renders empty.
+
+### A smoke run must not be mistakable for the result
+
+A coarse run produces a figure and a headline JSON that look exactly like the
+real ones. Before this was separated, a smoke run overwrote both
+`figures/main_result.png` and `results/headline_comparison.json` — the file the
+FORRT Outcome quotes its numbers from.
+
+Only the full configuration may claim the canonical artefact names. Anything
+else writes `partial_run_<res>deg_stride<n>_*`, records `is_full_replication`
+inside the JSON so a copied file still declares itself, and stamps its figure.
+`Snakefile`, `03_analysis.py` and `04_figures.py` each derive this from the same
+rule and must be changed together.
+
+### Pick smoke parameters by reading the code, not by intuition
+
+"Coarser is cheaper" is not safely monotonic. Here `01_data_download.py` derives:
+
+```python
+COARSEN    = TARGET_RES_DEG / 0.05
+BAND_WIDTH = (64 // COARSEN) * COARSEN   # 64 = the ARCO store's lon chunk
+```
+
+so any target above **3.2°** makes `COARSEN > 64`, floors `BAND_WIDTH` to `0`,
+and every band comes back **empty with no error** — a green CI run that
+downloaded nothing. Likewise the climatology is pinned to 1983–2012, so
+truncating the period with `MHW_PERIOD_END` leaves the baseline only partly
+covered. Read the parameter's actual use before choosing a smoke value.
 
 ---
 
@@ -241,8 +290,20 @@ grep "\.py" myst.yml
 # Workflow uses BASE_URL env var
 grep "BASE_URL" .github/workflows/jupyter-book.yml
 
-# Workflow executes all notebooks via glob
-grep "notebooks/\*.ipynb" .github/workflows/jupyter-book.yml
+# Every .py has a committed, executed .ipynb for the book to render
+for py in notebooks/*.py; do
+  [ -f "${py%.py}.ipynb" ] || echo "MISSING: ${py%.py}.ipynb"
+done
+
+# ...and those outputs still match their source
+for nb in notebooks/*.ipynb; do
+  pixi run jupytext --to py:percent --output - "$nb" \
+    | diff -q - "${nb%.ipynb}.py" >/dev/null || echo "STALE: $nb"
+done
 ```
+
+(If this repo instead executes notebooks in CI, check `grep "notebooks/\*.ipynb"
+.github/workflows/jupyter-book.yml` for the glob rather than the two loops
+above — see § Executing notebooks in CI, or committing them.)
 
 The cost of a bad CI configuration is debugging an empty Jupyter Book at 11 PM the day before a release. The cost of the audit is 30 seconds.
