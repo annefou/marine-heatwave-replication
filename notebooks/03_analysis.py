@@ -54,7 +54,8 @@ import json
 import os
 import time
 import warnings
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures.process import BrokenProcessPool
 from pathlib import Path
 
 import numpy as np
@@ -65,12 +66,22 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 # %%
 TARGET_RES_DEG = float(os.environ.get("MHW_TARGET_RES_DEG", 1.0))
-# Measured cost is ~0.88 s per cell (threshold dominates at ~90% of it), so a 1°
-# global grid is ~16 core-hours. LAT_BLOCK is deliberately small: XMHW's
-# intermediate dataset holds ~15 time-length arrays, so a block of 2 latitude
-# rows costs ~1.1 GB in a worker and 6 workers fit comfortably in 15 GB.
-LAT_BLOCK = int(os.environ.get("MHW_LAT_BLOCK", 2))
-N_WORKERS = int(os.environ.get("MHW_WORKERS", 6))
+# Memory per block is measured, not estimated. An earlier comment here guessed
+# ~1.1 GB for a 2-row block; the real figure is ~4x that, and 6 workers on that
+# assumption got OOM-killed on a 15 GB machine part-way through the stage.
+#
+# Measured on a full-ocean tropical block (scripts/probe_block.py 90 92 / 90 91):
+#   LAT_BLOCK=2 -> 4.22 GB peak RSS, 436 s
+#   LAT_BLOCK=1 -> 1.88 GB peak RSS, 210 s
+# Peak scales with the block's valid-cell count, because XMHW's intermediate
+# dataset holds ~15 time-length arrays over the stacked cells. Time is ~0.78 s
+# per ocean cell either way, so narrow blocks cost throughput nothing and buy
+# the headroom: at 1° there are ~30.8k ocean cells, i.e. ~6.7 core-hours.
+#
+# N_WORKERS x per-block peak must fit in RAM: 5 x 1.88 GB = 9.4 GB, which leaves
+# room on a 15 GB machine. Re-probe before raising it on different hardware.
+LAT_BLOCK = int(os.environ.get("MHW_LAT_BLOCK", 1))
+N_WORKERS = int(os.environ.get("MHW_WORKERS", 5))
 CLIM_PERIOD = [1983, 2012]
 
 PROC_DIR = Path("../data/processed")
@@ -80,6 +91,14 @@ RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 IN_PATH = PROC_DIR / f"sst_clean_{TARGET_RES_DEG:g}deg.nc"
 OUT_PATH = RESULTS_DIR / f"mhw_annual_{TARGET_RES_DEG:g}deg.nc"
 SUMMARY_PATH = RESULTS_DIR / "headline_comparison.json"
+# Per-block checkpoints. This stage is many core-hours; without them an OOM kill
+# or a lost session throws away every finished block. Same atomic-rename pattern
+# as the download bands in 01.
+BLOCK_DIR = RESULTS_DIR / f"blocks_{TARGET_RES_DEG:g}deg"
+BLOCK_DIR.mkdir(parents=True, exist_ok=True)
+# A block with no ocean cells has no output to cache, so record it as an empty
+# marker file rather than recomputing the (fast) land test on every resume.
+EMPTY = ".empty"
 
 
 # %% [markdown]
@@ -91,15 +110,31 @@ SUMMARY_PATH = RESULTS_DIR / "headline_comparison.json"
 # sets peak memory.
 
 # %%
+def block_path(lat0: int) -> Path:
+    return BLOCK_DIR / f"block_{lat0:05d}.nc"
+
+
 def run_block(args):
-    """Detect MHWs for one latitude block; return annual per-cell statistics."""
+    """Detect MHWs for one latitude block; return annual per-cell statistics.
+
+    Writes its result to a per-block checkpoint and reuses it on resume, so a
+    killed run only loses the blocks that were in flight.
+    """
     path, lat0, lat1 = args
+    out_path = block_path(lat0)
+    if out_path.exists():
+        with xr.open_dataset(out_path) as ds:
+            return ds.load()
+    if out_path.with_suffix(EMPTY).exists():
+        return None
+
     from xmhw.xmhw import detect, threshold  # imported in the worker
 
     sst = xr.open_dataarray(path).isel(latitude=slice(lat0, lat1)).load()
 
     # Skip blocks that are entirely land/masked.
     if not bool(sst.notnull().any()):
+        out_path.with_suffix(EMPTY).touch()
         return None
 
     clim = threshold(sst, climatologyPeriod=CLIM_PERIOD).compute()
@@ -118,7 +153,14 @@ def run_block(args):
     out = xr.Dataset({"mhw_days": days, "mhw_events": events})
     # Restore the mask: cells XMHW dropped as land come back as NaN, not 0.
     valid = sst.notnull().any("time")
-    return out.where(valid)
+    out = out.where(valid)
+
+    # Write then rename, so a kill mid-write cannot leave a truncated file that
+    # resume would mistake for a finished block.
+    tmp = out_path.with_suffix(".nc.tmp")
+    out.to_netcdf(tmp)
+    os.replace(tmp, out_path)
+    return out
 
 
 # %% [markdown]
@@ -133,19 +175,56 @@ if __name__ == "__main__":
         (str(IN_PATH), i, min(i + LAT_BLOCK, n_lat))
         for i in range(0, n_lat, LAT_BLOCK)
     ]
-    print(f"{len(blocks)} latitude block(s) x {LAT_BLOCK} rows, {N_WORKERS} workers")
+    cached = sum(
+        1 for _, lat0, _ in blocks
+        if block_path(lat0).exists() or block_path(lat0).with_suffix(EMPTY).exists()
+    )
+    print(f"{len(blocks)} latitude block(s) x {LAT_BLOCK} rows, {N_WORKERS} workers"
+          f"{f' ({cached} cached)' if cached else ''}")
 
     t0 = time.time()
     results = []
+    n_computed = 0  # blocks actually detected in this run, excluding resumed ones
+    failed = []
+    # submit/as_completed rather than map: one block that dies (an OOM kill takes
+    # the whole pool down with BrokenProcessPool) must not discard the blocks that
+    # finished. Their checkpoints are already on disk either way, but this also
+    # lets the run report exactly which blocks still need doing.
     with ProcessPoolExecutor(max_workers=N_WORKERS) as pool:
-        for i, res in enumerate(pool.map(run_block, blocks), 1):
-            if res is not None:
-                results.append(res)
-            if i % 5 == 0 or i == len(blocks):
-                el = (time.time() - t0) / 60
-                eta = el / i * (len(blocks) - i)
-                print(f"  [{i}/{len(blocks)}] elapsed {el:5.1f} min, ETA {eta:5.1f} min",
-                      flush=True)
+        futures = {pool.submit(run_block, b): b for b in blocks}
+        try:
+            for i, fut in enumerate(as_completed(futures), 1):
+                _, lat0, _ = futures[fut]
+                try:
+                    res = fut.result()
+                except Exception as exc:  # noqa: BLE001 — report, don't abort
+                    failed.append((lat0, repr(exc)))
+                    print(f"  block {lat0}: FAILED {exc!r}", flush=True)
+                    continue
+                if res is not None:
+                    results.append(res)
+                if not block_path(lat0).with_suffix(EMPTY).exists():
+                    n_computed += 1
+                if i % 5 == 0 or i == len(blocks):
+                    el = (time.time() - t0) / 60
+                    # Rate is per *computed* block; resumed ones cost ~0 s and
+                    # would otherwise make the ETA far too optimistic.
+                    rate = el / max(n_computed, 1)
+                    eta = rate * (len(blocks) - i)
+                    print(f"  [{i}/{len(blocks)}] elapsed {el:5.1f} min, "
+                          f"ETA {eta:5.1f} min", flush=True)
+        except BrokenProcessPool:
+            print("pool died (likely an OOM kill). Finished blocks are "
+                  "checkpointed in "
+                  f"{BLOCK_DIR}; re-run to resume, with a lower MHW_WORKERS.",
+                  flush=True)
+            raise
+
+    if failed:
+        raise RuntimeError(
+            f"{len(failed)} block(s) failed: {failed[:5]}"
+            + (" ..." if len(failed) > 5 else "")
+        )
 
     annual = xr.concat(results, dim="latitude").sortby("latitude")
     print("annual stats:", dict(annual.sizes))
