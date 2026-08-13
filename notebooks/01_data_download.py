@@ -151,7 +151,11 @@ for i, start in enumerate(band_starts, 1):
     t0 = time.time()
     band = fetch_band(start).compute(scheduler="threads", num_workers=4)
     band.name = "analysed_sst"
-    band.to_netcdf(band_path, encoding={"analysed_sst": {"zlib": True, "complevel": 4}})
+    # Write to a temp name and rename atomically. If the process is killed
+    # mid-write, resume must not mistake a truncated file for a finished band.
+    tmp_path = band_path.with_suffix(".nc.tmp")
+    band.to_netcdf(tmp_path, encoding={"analysed_sst": {"zlib": True, "complevel": 4}})
+    os.replace(tmp_path, band_path)
     lon0, lon1 = float(band.longitude[0]), float(band.longitude[-1])
     done, total = i, len(band_starts)
     eta = (time.time() - t_start) / done * (total - done) / 60
