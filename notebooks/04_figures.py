@@ -136,14 +136,23 @@ ax2.set_xlabel("Value (units differ per row — see labels)")
 ax2.set_title("Headline statistics", fontsize=11)
 ax2.legend(fontsize=8, loc="lower right")
 
-n_cells = cmp["replication"]["n_cells"]
+# Provenance comes from the comparison JSON that 03 wrote, never from literals
+# here. This footer used to hardcode "XMHW (DOI 10.5281/zenodo.7662469)", which
+# is version 0.9.2's DOI, while the pipeline runs 1.0.0 — so the headline figure
+# asserted it was produced by software the replication never used. Naming the
+# version and the SWHID keeps the figure honest even when separated from the
+# repo, which is exactly what happens to figures.
+prov = cmp["replication"]
+n_cells = prov["n_cells"]
+sw = f"XMHW {prov.get('software_version', '?')}"
+swhid = prov.get("software_swhid", "")
+sw_rev = swhid.split(";")[0].replace("swh:1:rev:", "")[:12] if swhid else ""
 fig.suptitle("", y=0.99)
 fig.text(0.01, 0.01,
-         f"ESA SST CCI Analysis v3.0 (DOI 10.5285/4a9654136a7148e39b7feb56f8bb02d2) · "
-         f"XMHW (DOI 10.5281/zenodo.7662469) · {TARGET_RES_DEG:g}° grid, "
+         f"ESA SST CCI Analysis v3.0 (DOI {prov['dataset_doi']}) · "
+         f"{sw}{f' ({sw_rev})' if sw_rev else ''} · {TARGET_RES_DEG:g}° grid, "
          f"{n_cells} ocean cells · climatology "
-         f"{cmp['replication']['climatology_period'][0]}–"
-         f"{cmp['replication']['climatology_period'][1]}",
+         f"{prov['climatology_period'][0]}–{prov['climatology_period'][1]}",
          fontsize=7, color="0.35")
 
 # A partial run's figure is visually indistinguishable from the real one, and
