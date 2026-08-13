@@ -56,6 +56,7 @@ import time
 import warnings
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from concurrent.futures.process import BrokenProcessPool
+from importlib.metadata import version
 from pathlib import Path
 
 import numpy as np
@@ -305,7 +306,19 @@ if __name__ == "__main__":
             "dataset": "ESA SST CCI Analysis v3.0",
             "dataset_doi": "10.5285/4a9654136a7148e39b7feb56f8bb02d2",
             "software": "XMHW",
-            "software_doi": "10.5281/zenodo.7662469",
+            # Read from the installed package, not asserted, so this cannot
+            # drift from what actually ran.
+            "software_version": version("xmhw"),
+            # The identifier that pins the REVISION. XMHW's Zenodo deposits stop
+            # at 0.9.2 and 1.0.0 was never deposited, so there is no version DOI
+            # for what ran — this field used to carry 10.5281/zenodo.7662469,
+            # which is 0.9.2's, and would have put a false provenance claim into
+            # the FORRT Outcome. The concept DOI below cites the project only.
+            "software_swhid": (
+                "swh:1:rev:1006312ae693e8aef8bd3706b9afb431eca564a5"
+                ";origin=https://github.com/coecms/xmhw"
+            ),
+            "software_concept_doi": "10.5281/zenodo.5112732",
             "resolution_deg": TARGET_RES_DEG,
             "lon_band_stride": LON_BAND_STRIDE,
             "period": [int(years[0]), int(years[-1])],
