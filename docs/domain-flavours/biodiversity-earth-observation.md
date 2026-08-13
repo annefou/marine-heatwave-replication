@@ -58,17 +58,21 @@ Every GBIF query that feeds a replication must mint a download DOI (not just a U
 
 ### Copernicus credentials in CI
 
-`copernicusmarine login` prompts interactively and fails in CI. Create the credentials file directly from secrets:
+`copernicusmarine login` prompts interactively and hangs in CI. Pass the
+credentials as environment variables — the library reads these natively and
+checks them *before* any configuration file, so no file and no login step:
 
 ```yaml
-- name: Set up Copernicus Marine credentials
-  run: |
-    mkdir -p ~/.copernicusmarine
-    echo "${{ secrets.COPERNICUS_CREDENTIALS_BASE64 }}" | base64 -d \
-      > ~/.copernicusmarine/.copernicusmarine-credentials
+env:
+  COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
+  COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
 ```
 
-The secret is a base64-encoded INI file containing `[credentials]\nusername=…\npassword=…`.
+**Do not base64 the credentials file into one secret.** GitHub masks the exact
+string it is given, so a base64 blob is masked while the decoded username and
+password are not — one `set -x` and the password is in the clear in a public
+build log. Encoding is not encryption, and GitHub secrets already support
+multi-line values, so it solves nothing.
 
 ### Self-contained data downloads
 

@@ -100,17 +100,35 @@ Every GBIF query that feeds a replication must mint a download DOI (not just a U
 
 ### Copernicus credentials in CI
 
-`copernicusmarine login` prompts interactively and fails in CI. Create the credentials file directly from secrets:
+`copernicusmarine login` prompts interactively and hangs in CI. Pass the
+credentials as environment variables — the library reads these natively and
+checks them *before* any configuration file, so no file and no login step:
 
 ```yaml
-- name: Set up Copernicus Marine credentials
-  run: |
-    mkdir -p ~/.copernicusmarine
-    echo "${{ secrets.COPERNICUS_CREDENTIALS_BASE64 }}" | base64 -d \
-      > ~/.copernicusmarine/.copernicusmarine-credentials
+env:
+  COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
+  COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
 ```
 
-The secret is a base64-encoded INI file containing `[credentials]\nusername=…\npassword=…`.
+That is the whole setup. Two secrets, no step.
+
+**Do not base64 the credentials file into a single secret.** An earlier version
+of this guidance did, and it is worse on both counts it appears to help with:
+
+- **It defeats log masking.** GitHub masks a secret's value wherever it appears
+  in logs. It masks the string it was given — so a base64 blob is masked and the
+  decoded username and password, which GitHub has never seen, are *not*. One
+  `set -x`, one library debug line, one error message echoing the config, and
+  the password is in the clear in a public repo's build log. Storing each value
+  as itself means GitHub masks the thing you actually care about.
+- **It solves a problem that does not exist.** The usual reason to base64 a
+  secret is to fit a multi-line file into one value — but GitHub secrets support
+  multi-line values, and `copernicusmarine`'s credentials file is a single line
+  anyway. Encoding is not encryption; it adds a decode step, an extra failure
+  mode, and a false sense of protection.
+
+The same reasoning applies to any credential in this template: prefer the
+library's own environment variables over reconstructing its config file.
 
 ### Self-contained data downloads
 

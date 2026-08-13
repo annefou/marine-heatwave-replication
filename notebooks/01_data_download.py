@@ -42,7 +42,8 @@
 # **Credentials.** Copernicus Marine account (free) at
 # <https://data.marine.copernicus.eu/register>. `copernicusmarine login` writes
 # `~/.copernicusmarine/.copernicusmarine-credentials`. In CI, create that file
-# from a base64 secret rather than calling `login` (it prompts interactively) —
+# In CI, set COPERNICUSMARINE_SERVICE_USERNAME / _PASSWORD instead — the library
+# checks those before any config file, and `login` prompts and would hang —
 # see `DOMAIN.md` § Copernicus credentials in CI.
 
 # %%

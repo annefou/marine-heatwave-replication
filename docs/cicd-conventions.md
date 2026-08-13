@@ -257,19 +257,42 @@ Polling a results file every few seconds wastes conversation context and produce
 
 ## Credentials in CI
 
-For services that require credentials, never use the interactive login command in CI (it prompts for input and hangs the workflow). Construct the credentials file directly from secrets.
+For services that require credentials, never use the interactive login command in
+CI (it prompts for input and hangs the workflow). **Prefer the library's own
+environment variables** over reconstructing its configuration file — most
+clients read them, and it is both simpler and safer.
 
-Example for Copernicus Marine:
+Example for Copernicus Marine, which checks these before any config file:
 
 ```yaml
-- name: Set up Copernicus Marine credentials
-  run: |
-    mkdir -p ~/.copernicusmarine
-    echo "${{ secrets.COPERNICUS_CREDENTIALS_BASE64 }}" | base64 -d \
-      > ~/.copernicusmarine/.copernicusmarine-credentials
+env:
+  COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
+  COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
 ```
 
-The secret is a base64-encoded INI file. Generate it locally with `base64 < ~/.copernicusmarine/.copernicusmarine-credentials | tr -d '\n'` and paste into a GitHub Actions secret.
+No step, no file, no encoding.
+
+### Don't base64 credentials into a single secret
+
+This guidance previously said to store a base64-encoded copy of the credentials
+file and decode it at runtime. Don't: it is worse than storing the values
+plainly, on both counts it looks like it helps with.
+
+**It defeats GitHub's log masking.** GitHub masks the exact string it was given.
+Give it a base64 blob and it masks the blob — the decoded username and password
+are values it has never seen and therefore cannot mask. One `set -x`, one debug
+line, one error echoing the config, and the credential is in the clear in a
+public build log. Store each value as itself and the thing you care about is the
+thing that gets masked.
+
+**It solves a problem you don't have.** The usual motivation is squeezing a
+multi-line file into one value — but GitHub secrets support multi-line values.
+Encoding is not encryption; it buys an extra decode step, an extra failure mode,
+and a false sense of protection.
+
+If a client genuinely has no environment-variable support and needs a real file,
+write it from plainly-stored secrets (`printf '%s\n' "$USER" > file`), so masking
+still applies to each value.
 
 ---
 

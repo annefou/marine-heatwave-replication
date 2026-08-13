@@ -20,10 +20,21 @@ on:
 # this is just the spelling that parses. docker.yml:11 does the same with
 # ZENODO_TOKEN.
 #
-# To enable one: uncomment `env:` and the line(s) you need here, and the
-# matching step further down.
+# To enable one: add the GitHub secret and uncomment its line here.
 env:
-  COPERNICUS_CREDENTIALS_BASE64: ${{ secrets.COPERNICUS_CREDENTIALS_BASE64 }}
+  # copernicusmarine reads these two natively and checks them BEFORE any
+  # configuration file (credentials_utils.py), so CI needs no credentials file
+  # and no `copernicusmarine login` (which prompts, and so hangs in CI).
+  #
+  # Deliberately NOT the base64-of-the-credentials-file approach: GitHub masks a
+  # secret's value in logs, so storing username and password as themselves means
+  # both get masked. Wrapping them in base64 and decoding at runtime produces
+  # values GitHub has never seen and therefore cannot mask — one careless
+  # `set -x` or a library debug line prints the password in the clear. Encoding
+  # is not encryption, and here it bought nothing: the credentials file is a
+  # single line, so there was no multi-line problem to solve in the first place.
+  COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
+  COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
 #   CDSAPI_KEY: ${{ secrets.CDSAPI_KEY }}
 
   # ----- smoke configuration -----
@@ -94,20 +105,13 @@ jobs:
           cache: true
 
       # ----- credentials -----
-      # The `if:` tests `env.`, never `secrets.` — see the note on the `env:`
-      # block above for why that spelling is the one that parses.
-      #
-      # Stage 01 streams from the Copernicus Marine ARCO store, so without this
-      # secret the smoke run cannot authenticate. It is skipped rather than
-      # failed when the secret is absent (forks, and before the secret is set),
-      # and the guard step below then reports the pipeline as unverified instead
-      # of letting the job pass silently green.
-      - name: Set up Copernicus Marine credentials
-        if: ${{ env.COPERNICUS_CREDENTIALS_BASE64 != '' && steps.guard.outputs.ready == 'true' }}
-        run: |
-          mkdir -p ~/.copernicusmarine
-          echo "${COPERNICUS_CREDENTIALS_BASE64}" | base64 -d \
-            > ~/.copernicusmarine/.copernicusmarine-credentials
+      # No step needed: the env block at the top of this file already puts the
+      # Copernicus credentials in the environment, where copernicusmarine finds
+      # them. Stage 01 streams from the CMEMS ARCO store, so without them the
+      # smoke run cannot authenticate — it is skipped rather than failed (forks
+      # get no secrets, and the secret may simply not be set yet), and the guard
+      # step below reports the pipeline as unverified instead of letting the job
+      # pass silently green.
       #
       # - name: Set up CDS credentials
       #   if: ${{ env.CDSAPI_KEY != '' && steps.guard.outputs.ready == 'true' }}
@@ -129,7 +133,7 @@ jobs:
       # at the top of this file.
       - name: Run pipeline (coarse smoke configuration)
         id: smoke
-        if: ${{ env.COPERNICUS_CREDENTIALS_BASE64 != '' && steps.guard.outputs.ready == 'true' }}
+        if: ${{ env.COPERNICUSMARINE_SERVICE_USERNAME != '' && steps.guard.outputs.ready == 'true' }}
         run: |
           echo "::notice::Smoke run at ${MHW_TARGET_RES_DEG}° grid, stride ${MHW_LON_BAND_STRIDE}. This exercises the pipeline; it does not reproduce the 1° result."
           pixi run snakemake --cores 2
@@ -137,9 +141,9 @@ jobs:
       # Without this the job passes green having run no pipeline at all, which
       # reads identically to a successful verification.
       - name: Report that the pipeline was not verified
-        if: ${{ env.COPERNICUS_CREDENTIALS_BASE64 == '' && steps.guard.outputs.ready == 'true' }}
+        if: ${{ env.COPERNICUSMARINE_SERVICE_USERNAME == '' && steps.guard.outputs.ready == 'true' }}
         run: |
-          echo "::warning::COPERNICUS_CREDENTIALS_BASE64 is not set, so the pipeline smoke run was SKIPPED — this job proves only that the repo is well-formed. Set the secret to verify the pipeline end-to-end: gh secret set COPERNICUS_CREDENTIALS_BASE64 < <(base64 -w0 ~/.copernicusmarine/.copernicusmarine-credentials)"
+          echo "::warning::COPERNICUSMARINE_SERVICE_USERNAME/PASSWORD are not set, so the pipeline smoke run was SKIPPED — this job proves only that the repo is well-formed. Set them to verify the pipeline end-to-end: gh secret set COPERNICUSMARINE_SERVICE_USERNAME / gh secret set COPERNICUSMARINE_SERVICE_PASSWORD"
 
       - name: Upload results
         if: always() && steps.smoke.outcome == 'success'
