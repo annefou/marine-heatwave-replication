@@ -38,6 +38,7 @@ keywords:
   - nanopublication
   - Science-Live
 references:
+  # The paper under replication.
   - type: article
     title: "Longer and more frequent marine heatwaves over the past century"
     authors:
@@ -45,3 +46,39 @@ references:
         given-names: "Eric C. J."
     year: "2018"
     doi: "10.1038/s41467-018-03732-9"
+
+  # The INDEPENDENT detection engine. Author-disjoint from Oliver et al., which
+  # is what makes this a Replication rather than a Reproduction — so pinning
+  # exactly which XMHW produced these numbers is load-bearing, not bookkeeping.
+  #
+  # Identified by SWHID, not DOI, and deliberately: XMHW's Zenodo archive stops
+  # at 0.9.2 (10.5281/zenodo.7662469), but this replication ran 1.0.0, which was
+  # never deposited there. The concept DOI below cites the PROJECT; only the
+  # SWHID identifies the REVISION whose output is reported here. Software
+  # Heritage archived it independently of the authors, and the identifier is
+  # forge-agnostic — it still resolves if the GitHub repository disappears.
+  # Verified to resolve 2026-08-13; the same commit is pinned in pixi.toml.
+  - type: software
+    title: "XMHW: Xarray based code to identify Marine HeatWave events and their characteristics"
+    authors:
+      - family-names: "Petrelli"
+        given-names: "Paola"
+    version: "1.0.0"
+    repository-code: "https://github.com/coecms/xmhw"
+    doi: "10.5281/zenodo.5112732"
+    identifiers:
+      - type: swh
+        value: "swh:1:rev:1006312ae693e8aef8bd3706b9afb431eca564a5;origin=https://github.com/coecms/xmhw"
+        description: "Software Heritage ID of the exact XMHW revision (tag 1.0.0) this replication ran"
+      - type: doi
+        value: "10.5281/zenodo.5112732"
+        description: "Concept DOI for XMHW as a project — resolves to the latest DEPOSITED version (0.9.2), not the 1.0.0 used here"
+
+  # The INDEPENDENT SST record. Different observational basis from the paper's
+  # NOAA OISST / HadISST inputs, which is the other half of what makes this a
+  # Replication.
+  - type: data
+    title: "ESA SST CCI Analysis v3.0 (Level 4, global, daily)"
+    year: "2024"
+    doi: "10.5285/4a9654136a7148e39b7feb56f8bb02d2"
+    notes: "Accessed via the Copernicus Marine Service ARCO store, dataset ID ESACCI-GLO-SST-L4-REP-OBS-SST"

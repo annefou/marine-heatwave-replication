@@ -129,10 +129,22 @@ jobs:
           if [ -f .template-uninitialised ]; then
             note "skipped — template not initialised yet (sentinel present)"
           else
+            # {{ZENODO_DOI}} is exempt, and only it. Every other token is
+            # substituted at Phase 0, but the Zenodo DOI does not EXIST until
+            # Zenodo mints it from the first GitHub release (Phase 4) — so
+            # requiring it here fails the lint on every repo that has not
+            # released yet, which is every repo during the work that leads up to
+            # a release. release-identifiers.yml substitutes it automatically on
+            # release; see the comment above `doi:` in CITATION.cff.
+            # The exemption is deliberately narrow: an unresolved token of any
+            # other name is still an error, and a real DOI must be in place
+            # before the release itself is cut (docs/fair4rs-checklist.md).
             for f in CITATION.cff codemeta.json myst.yml pixi.toml Dockerfile ro-crate-metadata.json; do
               [ -f "$f" ] || continue
-              if grep -nE "\{\{[A-Z_]+\}\}" "$f"; then
-                bad "$f still contains unsubstituted {{...}} placeholder tokens (see the hits above). A release would ship these into Zenodo, Software Heritage and the RO-Crate permanently. Re-run the substitution or fix by hand — CLAUDE.md § Phase 0."
+              if grep -oE "\{\{[A-Z_]+\}\}" "$f" | grep -v '^{{ZENODO_DOI}}$' | sort -u | grep .; then
+                bad "$f still contains unsubstituted {{...}} placeholder tokens (listed above). A release would ship these into Zenodo, Software Heritage and the RO-Crate permanently. Re-run the substitution or fix by hand — CLAUDE.md § Phase 0."
+              elif grep -q "{{ZENODO_DOI}}" "$f"; then
+                note "$f has only {{ZENODO_DOI}}, which Zenodo mints at first release"
               else
                 note "$f has no leftover tokens"
               fi
