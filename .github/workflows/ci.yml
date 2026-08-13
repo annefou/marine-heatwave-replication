@@ -67,6 +67,11 @@ jobs:
       - name: Run tests
         run: pixi run -e tests test
 
+      # Runs on PRs, where the book workflow does not, so drift is caught before
+      # it reaches main rather than when the book is next deployed.
+      - name: Check committed notebooks are executed and match their sources
+        run: pixi run -e tests check-notebooks
+
   run:
     runs-on: ubuntu-latest
     steps:

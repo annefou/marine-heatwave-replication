@@ -63,26 +63,12 @@ jobs:
       #   * the drift guard below fails if a committed .ipynb no longer matches
       #     its .py source, so outputs cannot silently go stale.
       # Regenerate after a real run: pixi run jupytext --to notebook --execute notebooks/*.py
+      # Compares cell CONTENT, not file text: round-tripping an .ipynb back to
+      # py:percent drops `formats:` and rewrites `jupytext_version`, so a plain
+      # diff calls every notebook stale.
       - name: Check committed notebooks match their .py sources
         if: steps.guard.outputs.ready == 'true'
-        run: |
-          missing=0
-          for py in notebooks/*.py; do
-            nb="${py%.py}.ipynb"
-            if [ ! -f "$nb" ]; then
-              echo "::error::$nb is missing. The book renders committed executed"\
-                   "notebooks; regenerate with 'jupytext --to notebook --execute $py'."
-              missing=1
-              continue
-            fi
-            if ! pixi run jupytext --to py:percent --output - "$nb" | diff -q - "$py" >/dev/null; then
-              echo "::error::$nb is out of sync with $py. Re-execute it:"\
-                   "'jupytext --to notebook --execute $py', then commit the .ipynb."
-              missing=1
-            fi
-          done
-          [ "$missing" -eq 0 ] || exit 1
-          echo "All committed notebooks match their .py sources."
+        run: pixi run -e tests check-notebooks
 
       - name: Build MyST site
         if: steps.guard.outputs.ready == 'true'

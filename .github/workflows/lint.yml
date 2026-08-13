@@ -111,17 +111,12 @@ jobs:
             fi
           done
 
-          # The committed .ipynb must actually carry outputs — committing an
-          # unexecuted notebook passes the existence check above but still
-          # renders an empty book.
-          for nb in notebooks/*.ipynb; do
-            [ -e "$nb" ] || continue
-            if grep -q '"outputs": \[\]' "$nb" && ! grep -q '"output_type"' "$nb"; then
-              bad "$nb has no cell outputs — it was converted but never executed. Run 'jupytext --to notebook --execute ${nb%.ipynb}.py' and commit the result."
-            else
-              note "$nb carries executed outputs"
-            fi
-          done
+          # Whether those notebooks are actually EXECUTED and still match their
+          # .py is checked by scripts/check_notebook_sync.py, which parses them
+          # properly (ci.yml and jupyter-book.yml both run it). It is not
+          # duplicated here as a grep: this job is deliberately dependency-free,
+          # and a regex over .ipynb JSON is exactly the kind of check that cries
+          # wolf — see the note at the top of this file.
 
           echo "--- placeholder tokens ---"
 

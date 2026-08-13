@@ -91,6 +91,12 @@ lab = "jupyter lab"
 #   pixi run -e tests test
 [feature.tests.tasks]
 test = "pytest tests/ -q"
+# Verifies every notebooks/*.py has a committed .ipynb that is executed AND
+# still matches it. The book renders those committed notebooks instead of
+# executing the ~8 core-hour pipeline in CI, so this is what stops it from
+# silently serving results produced by code that no longer exists.
+# See docs/cicd-conventions.md § Executing notebooks in CI, or committing them.
+check-notebooks = "python scripts/check_notebook_sync.py"
 # Compares the live FORRT templates against nanopubs/templates/fields.snapshot.json.
 # Networked, so NOT in the per-PR gate — run on demand or on schedule
 # (.github/workflows/template-drift.yml). `--update` re-vendors the snapshot.
