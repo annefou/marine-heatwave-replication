@@ -2,13 +2,13 @@
 
 > This is a working scratchpad for the paper-analysis phase. The output of this file feeds the Quote / AIDA / Claim drafts. It is not itself a nanopub.
 
-**Reference paper:** {{PAPER_TITLE}}
+**Reference paper:** Longer and more frequent marine heatwaves over the past century
 
-**DOI:** {{PAPER_DOI}}
+**DOI:** 10.1038/s41467-018-03732-9
 
 **Authors:** _add._
 
-**Year:** {{PAPER_YEAR}}
+**Year:** 2018
 
 ## Headline claim
 

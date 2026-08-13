@@ -7,18 +7,18 @@ This file is loaded by `CLAUDE.md` and overrides nothing in `CLAUDE.md` or `DOMA
 ## Identity
 
 ```yaml
-name: "{{AUTHOR_NAME}}"
-email: "{{AUTHOR_EMAIL}}"
-orcid: "{{AUTHOR_ORCID}}"
-github_username: "{{GITHUB_USERNAME}}"
-affiliation: "{{AUTHOR_AFFILIATION}}"
+name: "Anne Fouilloux"
+email: "anne.fouilloux@lifewatch.eu"
+orcid: "https://orcid.org/0000-0002-1784-2920"
+github_username: "annefou"
+affiliation: "LifeWatch ERIC"
 ```
 
 For git commits, configure the local repo (run once after cloning):
 
 ```bash
-git config user.name "{{AUTHOR_NAME}}"
-git config user.email "{{AUTHOR_EMAIL}}"
+git config user.name "Anne Fouilloux"
+git config user.email "anne.fouilloux@lifewatch.eu"
 ```
 
 **Important — three layers must agree** for GitHub to credit your commits to your profile:
