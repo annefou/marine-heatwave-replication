@@ -142,6 +142,7 @@ BAND_DIR.mkdir(parents=True, exist_ok=True)
 
 t_start = time.time()
 band_paths = []
+n_fetched = 0  # bands actually downloaded in this run, excluding resumed ones
 for i, start in enumerate(band_starts, 1):
     band_path = BAND_DIR / f"band_{start:05d}.nc"
     band_paths.append(band_path)
@@ -157,12 +158,19 @@ for i, start in enumerate(band_starts, 1):
     band.to_netcdf(tmp_path, encoding={"analysed_sst": {"zlib": True, "complevel": 4}})
     os.replace(tmp_path, band_path)
     lon0, lon1 = float(band.longitude[0]), float(band.longitude[-1])
-    done, total = i, len(band_starts)
-    eta = (time.time() - t_start) / done * (total - done) / 60
+    n_fetched += 1
+    total = len(band_starts)
+    # Rate is per *fetched* band; bands skipped on resume cost ~0 s and would
+    # otherwise make the ETA far too optimistic.
+    remaining = sum(
+        1 for s in band_starts[i:] if not (BAND_DIR / f"band_{s:05d}.nc").exists()
+    )
+    eta = (time.time() - t_start) / n_fetched * remaining / 60
     print(
-        f"[{done}/{total}] lon {lon0:8.2f}..{lon1:8.2f}  "
+        f"[{i}/{total}] lon {lon0:8.2f}..{lon1:8.2f}  "
         f"shape={tuple(band.shape)}  {time.time() - t0:5.0f}s  "
-        f"(elapsed {(time.time() - t_start) / 60:5.1f} min, ETA {eta:5.1f} min)",
+        f"(elapsed {(time.time() - t_start) / 60:5.1f} min, "
+        f"{remaining} left, ETA {eta:5.1f} min)",
         flush=True,
     )
     del band
