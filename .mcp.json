@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "replication-radar": {
-      "command": "uvx",
-      "args": ["replication-radar"]
-    }
-  }
-}
