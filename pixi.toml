@@ -33,27 +33,33 @@ nbclient = "*"
 ipykernel = "*"
 # --- pipeline driver ---
 snakemake = "*"
-# --- replace/extend with the deps your replication needs ---
-# Examples (uncomment as needed):
-# statsmodels = "*"          # GLM/GLMM regression
-# scikit-learn = "*"         # classical ML
-# pyproj = "*"               # CRS + map projections
-# cartopy = "*"              # geographic plotting
-# netcdf4 = "*"              # NetCDF I/O — preferred over .npz for arrays (see DOMAIN.md)
-# zarr = "*"                 # Zarr — preferred for arrays >2 GB or cloud-archived (see DOMAIN.md)
-# cdsapi = "*"               # Copernicus Climate Data Store
-# copernicusmarine = "*"     # Copernicus Marine Service
-# healpix-geo = "*"          # HEALPix on geo data — preferred (use nest=True — see DOMAIN.md)
-# healpy = "*"               # HEALPix on pure-sphere (astrophysics) only
-# rasterio = "*"             # raster I/O
-# geopandas = "*"            # vector I/O
-# dask = "*"                 # out-of-core / parallel
+# --- deps this replication needs ---
+# NetCDF/Zarr I/O for the intermediate + result artefacts (never .npz — see DOMAIN.md).
+netcdf4 = "*"
+zarr = "*"
+# Out-of-core: the SST_cci archive is ~212 GB at native resolution for 1982-2016,
+# so 03_analysis streams spatial blocks lazily rather than materialising the cube.
+dask = "*"
+# Copernicus Marine Service — serves ESA SST CCI Analysis v3.0 as ARCO/Zarr with
+# pre-downsampled variants, which is why we pull from CMEMS rather than the CEDA
+# HTTP archive. See notebooks/01_data_download.py for the provenance note.
+copernicusmarine = "*"
+# fsspec HTTP backend — required to open the CMEMS ARCO Zarr stores over https.
+# Without both of these, xr.open_zarr on an https:// URL raises
+# "HTTPFileSystem requires requests and aiohttp to be installed".
+aiohttp = "*"
+requests = "*"
+# Coastline/graticule for the spatial diagnostic map in 04_figures.
+cartopy = "*"
 
 # Pip-only deps go in [pypi-dependencies]. Conda-forge is preferred where available.
-# [pypi-dependencies]
-# pygbif = "*"               # GBIF occurrences
-# polytope-client = "*"      # Destination Earth Climate DT
-# earthkit-data = "*"
+[pypi-dependencies]
+# XMHW — xarray implementation of the Hobday et al. (2016) MHW definition, by
+# Petrelli (CLEX/coecms), author-disjoint from Oliver et al. This is the
+# INDEPENDENT detection engine that makes this a Replication (not Reproduction)
+# Study. DOI 10.5281/zenodo.7662469. Not on conda-forge or PyPI, so pinned to the
+# git revision that this replication actually ran.
+xmhw = { git = "https://github.com/coecms/xmhw.git", rev = "master" }
 
 [feature.docs.dependencies]
 mystmd = "*"

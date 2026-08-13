@@ -16,37 +16,138 @@
 # %% [markdown]
 # # 04 — Figures
 #
-# This notebook produces the figures used in the Jupyter Book. Each figure is
-# saved to `figures/` as a high-DPI PNG **and** displayed inline (so MyST
-# renders the figure inside the Jupyter Book — see
-# `docs/cicd-conventions.md`).
+# Produces `figures/main_result.png`: the replication of **Figure 2** of Oliver
+# et al. (2018) — globally averaged total marine heatwave days per year — beside
+# a direct comparison of the headline statistics.
 #
-# **Inline display rule:** always pair `fig.savefig(...)` with `plt.show()`.
-# Without `plt.show()`, MyST builds an empty cell. Don't use
-# `matplotlib.use('Agg')` — it blocks inline display.
+# The original Figure 2 also plots an ENSO-removed series (red line). We do not
+# reproduce that line: it requires regressing daily SST on the multivariate ENSO
+# index at every pixel, which is a separate analysis from the claim under test.
+# Its absence is a scope limitation, not a disagreement.
 
 # %%
+import json
+import os
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import pandas as pd
+import numpy as np
+import xarray as xr
+from scipy import stats
+
+plt.style.use("seaborn-v0_8-whitegrid")
 
 # %%
+TARGET_RES_DEG = float(os.environ.get("MHW_TARGET_RES_DEG", 1.0))
 RESULTS_DIR = Path("../results")
-FIGURES_DIR = Path("../figures")
-FIGURES_DIR.mkdir(parents=True, exist_ok=True)
+FIG_DIR = Path("../figures")
+FIG_DIR.mkdir(parents=True, exist_ok=True)
+
+res = xr.open_dataset(RESULTS_DIR / f"mhw_annual_{TARGET_RES_DEG:g}deg.nc")
+with open(RESULTS_DIR / "headline_comparison.json") as f:
+    cmp = json.load(f)
+
+years = res.year.values
+days = res["global_mhw_days"].values
 
 # %% [markdown]
-# ## Main result figure
+# ## Figure 2 replication + headline comparison
 
 # %%
-# summary = pd.read_csv(RESULTS_DIR / "summary.csv")
+fig, (ax, ax2) = plt.subplots(
+    1, 2, figsize=(13, 5), gridspec_kw={"width_ratios": [1.7, 1]}
+)
 
-# fig, ax = plt.subplots(figsize=(8, 5))
-# ax.bar(summary["metric"], summary["value"])
-# ax.set_title("Replication headline result")
-# ax.set_ylabel("Value")
-# fig.tight_layout()
+# --- Panel A: the Figure 2 analogue -----------------------------------------
+ax.plot(years, days, color="black", lw=1.8, label="ESA SST_cci + XMHW (this work)")
+
+ok = np.isfinite(days)
+slope, intercept, lo, hi = stats.theilslopes(days[ok], years[ok].astype(float), 0.95)
+ax.plot(years, intercept + slope * years, color="crimson", lw=1.6, ls="--",
+        label=f"Theil–Sen trend ({slope * 10:+.1f} days/decade)")
+
+# Oliver et al.'s stated satellite-era endpoints, for reference.
+o_base = cmp["mhw_days"]["original_baseline_1980s"]
+o_end = o_base + cmp["mhw_days"]["original_change_over_record"]
+ax.plot([years[0], years[-1]], [o_base, o_end], color="tab:blue", lw=1.6, ls=":",
+        label=f"Oliver et al. 2018 (~{o_base:.0f} → ~{o_end:.0f} days)")
+
+ax.set_xlabel("Year")
+ax.set_ylabel("Annual MHW days (global mean)")
+ax.set_title("Total marine heatwave days globally\n"
+             "replication of Oliver et al. (2018) Fig. 2", fontsize=11)
+ax.legend(fontsize=8, loc="upper left")
+
+# --- Panel B: headline statistics, original vs replication -------------------
+metrics = [
+    ("MHW days\nover record", cmp["mhw_days"]["original_change_over_record"],
+     cmp["mhw_days"]["replication_change_over_record"], "days"),
+    ("Frequency\ntrend", cmp["mhw_frequency"]["original_trend_per_decade"],
+     cmp["mhw_frequency"]["replication_trend_per_decade"], "events/decade"),
+    ("Duration\ntrend", cmp["mhw_duration"]["original_trend_per_decade"],
+     cmp["mhw_duration"]["replication_trend_per_decade"], "days/decade"),
+]
+y = np.arange(len(metrics))
+h = 0.36
+ax2.barh(y - h / 2, [m[1] for m in metrics], height=h,
+         color="tab:blue", alpha=0.85, label="Oliver et al. 2018")
+ax2.barh(y + h / 2, [m[2] for m in metrics], height=h,
+         color="black", alpha=0.85, label="This replication")
+for i, (_, orig, repl, unit) in enumerate(metrics):
+    ax2.text(max(orig, repl) * 1.03, i - h / 2, f"{orig:g}", va="center", fontsize=8)
+    ax2.text(max(orig, repl) * 1.03, i + h / 2, f"{repl:g}", va="center", fontsize=8)
+ax2.set_yticks(y)
+ax2.set_yticklabels([m[0] for m in metrics], fontsize=9)
+ax2.invert_yaxis()
+ax2.set_xlabel("Value (units differ per row — see labels)")
+ax2.set_title("Headline statistics", fontsize=11)
+ax2.legend(fontsize=8, loc="lower right")
+
+n_cells = cmp["replication"]["n_cells"]
+fig.suptitle("", y=0.99)
+fig.text(0.01, 0.01,
+         f"ESA SST CCI Analysis v3.0 (DOI 10.5285/4a9654136a7148e39b7feb56f8bb02d2) · "
+         f"XMHW (DOI 10.5281/zenodo.7662469) · {TARGET_RES_DEG:g}° grid, "
+         f"{n_cells} ocean cells · climatology "
+         f"{cmp['replication']['climatology_period'][0]}–"
+         f"{cmp['replication']['climatology_period'][1]}",
+         fontsize=7, color="0.35")
+
+fig.tight_layout(rect=[0, 0.03, 1, 1])
+fig.savefig(FIG_DIR / "main_result.png", dpi=150, bbox_inches="tight")
+plt.show()
+
+# %% [markdown]
+# ## Spatial diagnostic
 #
-# fig.savefig(FIGURES_DIR / "main_result.png", dpi=150, bbox_inches="tight")
-# plt.show()  # required for MyST inline display
+# Not in the original Figure 2, but it shows *where* the global trend comes from
+# and makes a hemispheric artefact immediately visible if one exists.
+
+# %%
+try:
+    import cartopy.crs as ccrs
+
+    trend = xr.apply_ufunc(
+        lambda v: stats.theilslopes(v, years.astype(float))[0] * 10
+        if np.isfinite(v).sum() > 10 else np.nan,
+        res["mhw_days"],
+        input_core_dims=[["year"]],
+        vectorize=True,
+        output_dtypes=[float],
+    )
+
+    fig2 = plt.figure(figsize=(11, 5))
+    axm = plt.axes(projection=ccrs.Robinson())
+    p = trend.plot(
+        ax=axm, transform=ccrs.PlateCarree(), cmap="RdBu_r",
+        vmin=-30, vmax=30, add_colorbar=False,
+    )
+    axm.coastlines(linewidth=0.4)
+    axm.set_global()
+    cb = fig2.colorbar(p, ax=axm, orientation="horizontal", pad=0.05, shrink=0.7)
+    cb.set_label("Trend in annual MHW days (days per decade)")
+    axm.set_title("Where the global MHW-day trend comes from, 1982–2016", fontsize=11)
+    fig2.savefig(FIG_DIR / "mhw_days_trend_map.png", dpi=150, bbox_inches="tight")
+    plt.show()
+except Exception as exc:  # cartopy is optional for the headline result
+    print(f"skipped map: {exc}")

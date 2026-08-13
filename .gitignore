@@ -61,3 +61,8 @@ docker-image.tar.gz
 # Claude scratch
 .claude/.cache/
 .claude/local/
+data/raw/bands_*/
+data/raw/*.nc
+data/processed/
+data/raw/download.log
+results/*.nc
