@@ -83,6 +83,10 @@ TARGET_RES_DEG = float(os.environ.get("MHW_TARGET_RES_DEG", 1.0))
 # room on a 15 GB machine. Re-probe before raising it on different hardware.
 LAT_BLOCK = int(os.environ.get("MHW_LAT_BLOCK", 1))
 N_WORKERS = int(os.environ.get("MHW_WORKERS", 5))
+# How many times to try a block before calling it a real failure. See the retry
+# loop below: XMHW fails transiently on a few percent of blocks and succeeds on
+# a re-run, so a single attempt is not evidence of anything.
+MAX_BLOCK_ATTEMPTS = int(os.environ.get("MHW_BLOCK_ATTEMPTS", 4))
 CLIM_PERIOD = [1983, 2012]
 
 PROC_DIR = Path("../data/processed")
@@ -135,6 +139,13 @@ EMPTY = ".empty"
 # sets peak memory.
 
 # %%
+# Every per-cell variable a checkpoint must contain. A cached block missing any
+# of these predates the variable being added, so it is recomputed rather than
+# silently served — otherwise adding an output would quietly yield a results
+# file that is complete for some latitudes and not others.
+REQUIRED_VARS = ("mhw_days", "mhw_events", "mhw_intensity", "mhw_duration")
+
+
 def block_path(lat0: int) -> Path:
     return BLOCK_DIR / f"block_{lat0:05d}.nc"
 
@@ -149,7 +160,9 @@ def run_block(args):
     out_path = block_path(lat0)
     if out_path.exists():
         with xr.open_dataset(out_path) as ds:
-            return ds.load()
+            if all(v in ds.data_vars for v in REQUIRED_VARS):
+                return ds.load()
+        # Written before a variable was added — recompute rather than serve it.
     if out_path.with_suffix(EMPTY).exists():
         return None
 
@@ -163,7 +176,7 @@ def run_block(args):
         return None
 
     clim = threshold(sst, climatologyPeriod=CLIM_PERIOD).compute()
-    _, inter = detect(sst, clim.thresh, clim.seas, intermediate=True)
+    mhw, inter = detect(sst, clim.thresh, clim.seas, intermediate=True)
     inter = inter.compute()
 
     is_day = inter["events"].notnull()
@@ -175,7 +188,29 @@ def run_block(args):
     days = is_day.groupby("time.year").sum("time")
     events = is_start.groupby("time.year").sum("time")
 
-    out = xr.Dataset({"mhw_days": days, "mhw_events": events})
+    # Per-cell annual mean duration and intensity, for the Fig. 3 trend maps.
+    # XMHW computes these per EVENT and we used to discard them; recovering them
+    # later would mean re-running the whole detection, so keep them now.
+    # Following the paper, an event's duration and intensity are assigned to the
+    # year the event STARTED (unlike MHW days, which fall in the year they occur).
+    mhw = mhw.compute()
+    years = days["year"].values
+    start_year = mhw["time_start"].dt.year
+    year_dim = xr.DataArray(years, dims="year", name="year")
+
+    def annual_mean(var: str) -> xr.DataArray:
+        """Mean over the events that started in each year (NaN if none did)."""
+        return xr.concat(
+            [mhw[var].where(start_year == y).mean("events") for y in years],
+            dim=year_dim,
+        )
+
+    out = xr.Dataset({
+        "mhw_days": days,
+        "mhw_events": events,
+        "mhw_duration": annual_mean("duration"),
+        "mhw_intensity": annual_mean("intensity_mean"),
+    })
     # Restore the mask: cells XMHW dropped as land come back as NaN, not 0.
     valid = sst.notnull().any("time")
     out = out.where(valid)
@@ -210,44 +245,70 @@ if __name__ == "__main__":
     t0 = time.time()
     results = []
     n_computed = 0  # blocks actually detected in this run, excluding resumed ones
+
+    def run_pass(todo, label):
+        """Run one pass over `todo`; return (results, failures)."""
+        # global, not nonlocal: this runs at module scope under `if __name__`,
+        # so n_computed is a module global with no enclosing function to bind to.
+        global n_computed
+        got, bad = [], []
+        # submit/as_completed rather than map: one block that dies (an OOM kill
+        # takes the whole pool down with BrokenProcessPool) must not discard the
+        # blocks that finished. Their checkpoints are on disk either way, but
+        # this also lets the run report exactly which blocks still need doing.
+        with ProcessPoolExecutor(max_workers=N_WORKERS) as pool:
+            futures = {pool.submit(run_block, b): b for b in todo}
+            try:
+                for i, fut in enumerate(as_completed(futures), 1):
+                    _, lat0, _ = futures[fut]
+                    try:
+                        res = fut.result()
+                    except Exception as exc:  # noqa: BLE001 — retry, don't abort
+                        bad.append((lat0, repr(exc)))
+                        print(f"  block {lat0}: FAILED {exc!r}", flush=True)
+                        continue
+                    if res is not None:
+                        got.append(res)
+                    if not block_path(lat0).with_suffix(EMPTY).exists():
+                        n_computed += 1
+                    if i % 5 == 0 or i == len(todo):
+                        el = (time.time() - t0) / 60
+                        # Rate is per *computed* block; resumed ones cost ~0 s
+                        # and would make the ETA far too optimistic.
+                        rate = el / max(n_computed, 1)
+                        print(f"  {label}[{i}/{len(todo)}] elapsed {el:5.1f} min,"
+                              f" ETA {rate * (len(todo) - i):5.1f} min", flush=True)
+            except BrokenProcessPool:
+                print("pool died (likely an OOM kill). Finished blocks are "
+                      f"checkpointed in {BLOCK_DIR}; re-run to resume, with a "
+                      "lower MHW_WORKERS.", flush=True)
+                raise
+        return got, bad
+
+    # XMHW fails non-deterministically on a small fraction of blocks with
+    # InvalidIndexError, and the SAME block succeeds when run again — measured at
+    # 3/145 on one pass and 11/145 on the next, with no pattern in latitude or
+    # data coverage. Retrying in-process is the cheap, correct response: a failed
+    # block costs ~3 min to redo, whereas letting the stage raise strands hours of
+    # finished work until a human notices. Only a block that fails every attempt
+    # is a real failure.
+    todo, attempt = blocks, 0
     failed = []
-    # submit/as_completed rather than map: one block that dies (an OOM kill takes
-    # the whole pool down with BrokenProcessPool) must not discard the blocks that
-    # finished. Their checkpoints are already on disk either way, but this also
-    # lets the run report exactly which blocks still need doing.
-    with ProcessPoolExecutor(max_workers=N_WORKERS) as pool:
-        futures = {pool.submit(run_block, b): b for b in blocks}
-        try:
-            for i, fut in enumerate(as_completed(futures), 1):
-                _, lat0, _ = futures[fut]
-                try:
-                    res = fut.result()
-                except Exception as exc:  # noqa: BLE001 — report, don't abort
-                    failed.append((lat0, repr(exc)))
-                    print(f"  block {lat0}: FAILED {exc!r}", flush=True)
-                    continue
-                if res is not None:
-                    results.append(res)
-                if not block_path(lat0).with_suffix(EMPTY).exists():
-                    n_computed += 1
-                if i % 5 == 0 or i == len(blocks):
-                    el = (time.time() - t0) / 60
-                    # Rate is per *computed* block; resumed ones cost ~0 s and
-                    # would otherwise make the ETA far too optimistic.
-                    rate = el / max(n_computed, 1)
-                    eta = rate * (len(blocks) - i)
-                    print(f"  [{i}/{len(blocks)}] elapsed {el:5.1f} min, "
-                          f"ETA {eta:5.1f} min", flush=True)
-        except BrokenProcessPool:
-            print("pool died (likely an OOM kill). Finished blocks are "
-                  "checkpointed in "
-                  f"{BLOCK_DIR}; re-run to resume, with a lower MHW_WORKERS.",
-                  flush=True)
-            raise
+    while todo and attempt < MAX_BLOCK_ATTEMPTS:
+        attempt += 1
+        label = "" if attempt == 1 else f"retry {attempt - 1}: "
+        if attempt > 1:
+            print(f"retrying {len(todo)} transiently-failed block(s) "
+                  f"(attempt {attempt}/{MAX_BLOCK_ATTEMPTS})", flush=True)
+        got, bad = run_pass(todo, label)
+        results.extend(got)
+        failed = bad
+        todo = [b for b in blocks if b[1] in {lat0 for lat0, _ in bad}]
 
     if failed:
         raise RuntimeError(
-            f"{len(failed)} block(s) failed: {failed[:5]}"
+            f"{len(failed)} block(s) failed every one of {MAX_BLOCK_ATTEMPTS} "
+            f"attempts, so this is not the usual transient fault: {failed[:5]}"
             + (" ..." if len(failed) > 5 else "")
         )
 
