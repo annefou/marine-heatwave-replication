@@ -95,6 +95,16 @@ RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 IN_PATH = PROC_DIR / f"sst_clean_{TARGET_RES_DEG:g}deg.nc"
 
+# With MHW_ENSO_REMOVED=1, detect on the ENSO-less series from 05 while taking
+# the climatology and threshold from the ORIGINAL SST — the paper is explicit
+# that the threshold must stay the real-world one, because "what we consider
+# MHWs, and what ecosystems are adapted to, are based on the real-world
+# threshold". This produces the red line of Fig. 2. Same code path, so the
+# block checkpointing and transient-failure retry apply to it unchanged.
+ENSO_REMOVED = os.environ.get("MHW_ENSO_REMOVED", "") not in ("", "0", "false")
+ENSO_PATH = PROC_DIR / f"sst_enso_removed_{TARGET_RES_DEG:g}deg.nc"
+_suffix = "_enso_removed" if ENSO_REMOVED else ""
+
 # Only the full configuration produces the reported result. A partial or smoke
 # run must not overwrite the artefacts the FORRT Outcome quotes its numbers
 # from, so it writes to self-describing names instead. Keep in step with the
@@ -106,12 +116,12 @@ IS_FULL_REPLICATION = (
 )
 _tag = f"partial_run_{TARGET_RES_DEG:g}deg_stride{LON_BAND_STRIDE}"
 OUT_PATH = RESULTS_DIR / (
-    f"mhw_annual_{TARGET_RES_DEG:g}deg.nc" if IS_FULL_REPLICATION
-    else f"{_tag}_annual.nc"
+    f"mhw_annual_{TARGET_RES_DEG:g}deg{_suffix}.nc" if IS_FULL_REPLICATION
+    else f"{_tag}{_suffix}_annual.nc"
 )
 SUMMARY_PATH = RESULTS_DIR / (
-    "headline_comparison.json" if IS_FULL_REPLICATION
-    else f"{_tag}_comparison.json"
+    f"headline_comparison{_suffix}.json" if IS_FULL_REPLICATION
+    else f"{_tag}{_suffix}_comparison.json"
 )
 if not IS_FULL_REPLICATION:
     print(
@@ -123,7 +133,7 @@ if not IS_FULL_REPLICATION:
 # Per-block checkpoints. This stage is many core-hours; without them an OOM kill
 # or a lost session throws away every finished block. Same atomic-rename pattern
 # as the download bands in 01.
-BLOCK_DIR = RESULTS_DIR / f"blocks_{TARGET_RES_DEG:g}deg"
+BLOCK_DIR = RESULTS_DIR / f"blocks_{TARGET_RES_DEG:g}deg{_suffix}"
 BLOCK_DIR.mkdir(parents=True, exist_ok=True)
 # A block with no ocean cells has no output to cache, so record it as an empty
 # marker file rather than recomputing the (fast) land test on every resume.
@@ -175,7 +185,11 @@ def run_block(args):
         out_path.with_suffix(EMPTY).touch()
         return None
 
+    # Threshold always comes from the ORIGINAL SST; only the series being
+    # searched for exceedances changes. See the note on ENSO_REMOVED above.
     clim = threshold(sst, climatologyPeriod=CLIM_PERIOD).compute()
+    if ENSO_REMOVED:
+        sst = xr.open_dataarray(ENSO_PATH).isel(latitude=slice(lat0, lat1)).load()
     mhw, inter = detect(sst, clim.thresh, clim.seas, intermediate=True)
     inter = inter.compute()
 
