@@ -108,6 +108,18 @@ test = "pytest tests/ -q"
 # silently serving results produced by code that no longer exists.
 # See docs/cicd-conventions.md § Executing notebooks in CI, or committing them.
 check-notebooks = "python scripts/check_notebook_sync.py"
+
+# --- verification checks behind specific claims in the Outcome ---------------
+# Each of these produces a number that the Replication Outcome states, so they
+# live here rather than in a scratch directory: a claim whose supporting check
+# cannot be re-run is not evidence. See docs/verification-checks.md.
+#
+# Does the 93.3% longitude coverage bias the headline? (limitations)
+check-coverage = "python scripts/check_coverage_sensitivity.py"
+# Are the figure colours legible under colour-vision deficiency? (figure design)
+check-colors = "python scripts/check_colorblind_safe.py"
+# Do two complete runs produce the same numbers? (reproducibility caveat)
+compare-runs = "python scripts/compare_runs.py"
 # Compares the live FORRT templates against nanopubs/templates/fields.snapshot.json.
 # Networked, so NOT in the per-PR gate — run on demand or on schedule
 # (.github/workflows/template-drift.yml). `--update` re-vendors the snapshot.
