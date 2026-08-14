@@ -56,10 +56,18 @@ MAIN_FIG = (
 )
 
 
+# ENSO-removed branch: reproduces the red line of the paper's Fig. 2. Only
+# meaningful for the full configuration — a coarse smoke run has no business
+# regressing on the MEI — so it is requested only when IS_FULL_REPLICATION.
+ENSO_SST = f"{DATA}/processed/sst_enso_removed_{RES}deg.nc"
+ENSO_ANNUAL = f"{RESULTS}/mhw_annual_{RES}deg_enso_removed.nc"
+ENSO_COMPARISON = f"{RESULTS}/headline_comparison_enso_removed.json"
+
+
 rule all:
     input:
-        MAIN_FIG,
-        COMPARISON,
+        [MAIN_FIG, COMPARISON]
+        + ([ENSO_ANNUAL, ENSO_COMPARISON] if IS_FULL_REPLICATION else []),
 
 
 # ---------- 01: Data download ----------
@@ -102,6 +110,43 @@ rule analysis:
     shell:
         "mkdir -p {RESULTS}/logs && cd {NOTEBOOKS} && "
         "jupytext --to notebook --execute 03_analysis.py 2>&1 | tee ../{log}"
+
+
+# ---------- 05: ENSO removal ----------
+# Regresses daily SST onto the MEI (monthly leads/lags to ±1 year) and subtracts
+# the MEI terms, leaving the mean and seasonal cycle intact. Resumable: latitude
+# chunks already in data/processed/enso_chunks_<res>deg/ are skipped.
+rule enso_removal:
+    input:
+        CLEAN_SST,
+    output:
+        ENSO_SST,
+    log:
+        f"{RESULTS}/logs/05_enso_removal.log",
+    shell:
+        "mkdir -p {RESULTS}/logs && cd {NOTEBOOKS} && "
+        "jupytext --to notebook --execute 05_enso_removal.py 2>&1 | tee ../{log}"
+
+
+# ---------- 03b: Analysis on the ENSO-removed series ----------
+# Same notebook as `analysis`, with MHW_ENSO_REMOVED=1: it detects on the
+# ENSO-less series while taking the climatology and threshold from the ORIGINAL
+# SST, so it needs both files as input. Outputs are suffixed, so this rule and
+# `analysis` never contend for the same paths.
+rule analysis_enso:
+    input:
+        ENSO_SST,
+        CLEAN_SST,
+    output:
+        ENSO_ANNUAL,
+        ENSO_COMPARISON,
+    log:
+        f"{RESULTS}/logs/03_analysis_enso.log",
+    shell:
+        "mkdir -p {RESULTS}/logs && cd {NOTEBOOKS} && "
+        "MHW_ENSO_REMOVED=1 jupytext --to notebook --execute "
+        "--output ../{RESULTS}/logs/03_analysis_enso.ipynb 03_analysis.py "
+        "2>&1 | tee ../{log}"
 
 
 # ---------- 04: Figures ----------

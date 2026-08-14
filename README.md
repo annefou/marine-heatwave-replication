@@ -37,6 +37,97 @@ docker run --rm ghcr.io/annefou/marine-heatwave-replication:latest
 
 The Jupyter Book version is at <https://annefou.github.io/marine-heatwave-replication/>.
 
+---
+
+## Reproducing this replication
+
+**Read this before starting a full run.** The pipeline is not a five-minute job,
+and it needs an account.
+
+### What you need
+
+| | |
+|---|---|
+| **Copernicus Marine account** | Free, at <https://data.marine.copernicus.eu/register>. Then `copernicusmarine login` once, or set `COPERNICUSMARINE_SERVICE_USERNAME` / `_PASSWORD`. Stage 01 cannot run without it. |
+| **Disk** | ~5 GB (≈1 GB cleaned SST, ~0.6 GB download bands, ~3 GB ENSO-removed SST, plus checkpoints) |
+| **RAM** | **15 GB** at the default `MHW_WORKERS=5`. See "Tuning" below before running on a smaller machine. |
+| **Time** | **~8 core-hours**, about 3.5 h wall-clock on 8 cores |
+
+Nothing else is manual: every input is fetched by the notebooks themselves.
+
+### Runtime, measured on 8 cores / 15 GB
+
+| Stage | Wall time | What it does |
+|---|---|---|
+| `01_data_download` | ~55 min | Streams ESA SST CCI v3.0 from the CMEMS ARCO store, averaging 0.05° → 1° in flight |
+| `02_data_clean` | ~1 min | Ice/land masking |
+| `03_analysis` | ~1.3 h | MHW detection, ~6.7 core-hours over 30,774 ocean cells |
+| `05_enso_removal` | ~10 min | Regresses SST on the MEI, subtracts the ENSO signal |
+| `03` again (ENSO mode) | ~1.3 h | Re-detects on the ENSO-less series |
+| `04_figures` | <1 min | |
+
+### Every stage resumes
+
+Kill it, lose a session, hit an OOM — nothing is lost. Re-run the same command
+and it continues:
+
+- `01` skips longitude bands already in `data/raw/bands_<res>deg/`
+- `03` skips latitude blocks already in `results/blocks_<res>deg/`
+- `05` skips latitude chunks already in `data/processed/enso_chunks_<res>deg/`
+
+All are written to a temporary name and renamed atomically, so a process killed
+mid-write cannot leave a truncated file that resume mistakes for finished work.
+
+For a long run, detach it so it outlives your shell:
+
+```bash
+setsid nohup bash scripts/run_replication_chain.sh > results/logs/chain.log 2>&1 < /dev/null &
+cat results/logs/STATUS      # stage + heartbeat
+```
+
+### Just want to check it works?
+
+A coarse configuration exercises every stage in ~10 minutes. It does **not**
+reproduce the result — outputs are named `partial_run_*` and figures are
+watermarked, so they cannot be mistaken for it:
+
+```bash
+MHW_TARGET_RES_DEG=3 MHW_LON_BAND_STRIDE=8 pixi run snakemake --cores 2
+```
+
+Do not go above 3.2°: `01` derives `BAND_WIDTH = (64 // COARSEN) * COARSEN`, so a
+coarser target floors it to zero and every band comes back empty *with no error*.
+
+### Tuning
+
+| Variable | Default | Notes |
+|---|---|---|
+| `MHW_WORKERS` | 5 | × per-block peak RSS must fit in RAM. **Measure first**: `pixi run python scripts/probe_block.py 90 91` (1.88 GB/block here). Guessing this once cost a run to an OOM kill. |
+| `MHW_LAT_BLOCK` | 1 | Rows per block. Larger = more memory, no throughput gain (~0.78 s/cell either way). |
+| `MHW_BLOCK_ATTEMPTS` | 4 | Retries per block. XMHW fails transiently on 2–8% of blocks and succeeds on retry — see below. |
+| `MHW_TARGET_RES_DEG` | 1.0 | Analysis grid. |
+| `MHW_LON_BAND_STRIDE` | 1 | 1 = full longitude sampling. |
+
+### Known behaviour that is not a bug
+
+**XMHW fails non-deterministically** on a few percent of latitude blocks with
+`InvalidIndexError`, with no pattern in latitude or data coverage. The same block
+succeeds when retried, which `03` now does automatically. It does **not** affect
+results: two complete independent runs that failed on *different* blocks produced
+identical headline numbers to all reported digits
+(`pixi run compare-runs`).
+
+### Verifying what you got
+
+```bash
+pixi run compare-runs      # two runs produce identical numbers?
+pixi run check-coverage    # does the longitude sampling bias the headline?
+pixi run check-colors      # are the figures colour-vision safe?
+```
+
+See [`docs/verification-checks.md`](docs/verification-checks.md) for what each
+one established.
+
 ## Built from a template
 
 This repository was created from [`sciencelivehub/forrt-replication-template`](https://github.com/sciencelivehub/forrt-replication-template). The template ships an operating manual for AI assistants ([`CLAUDE.md`](CLAUDE.md), [`AGENTS.md`](AGENTS.md)), domain conventions ([`DOMAIN.md`](DOMAIN.md)), and reference docs (`docs/`) so that an AI working only inside this repository can guide a researcher from "paper PDF + GitHub repo" to "published FORRT chain + Zenodo DOI" with no other context.

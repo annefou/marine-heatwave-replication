@@ -6,22 +6,61 @@ This directory holds the raw and cleaned datasets used by the replication pipeli
 
 Every replication must be self-contained: a user clones the repo and runs `snakemake --cores 1` (or executes notebook 01 directly), and the code fetches its own input data. No "ask the author for the dataset" steps; no folder-of-CSVs that drift out of sync with the analysis.
 
-## Where data comes from
+## What this replication uses
 
-The first notebook (`notebooks/01_data_download.py`) is responsible for fetching all inputs. Common patterns:
+Two inputs, both fetched automatically.
 
-- **Zenodo** — `requests.get(...)` against the record's file URL.
-- **GBIF** — `pygbif` to issue an occurrence download, mint a download DOI, and pin it in the notebook output.
-- **Copernicus Climate Data Store** — `cdsapi`, with credentials in `~/.cdsapirc`.
-- **Copernicus Marine Service** — `copernicusmarine`, with credentials at `~/.copernicusmarine/.copernicusmarine-credentials` (created from secrets in CI; `copernicusmarine login` is interactive only).
-- **Destination Earth** — `polytope-client` or `earthkit-data`, with DestinE Data Lake credentials.
-- **Direct URLs** — figshare, paper supplementary materials.
+### 1. ESA SST CCI Analysis v3.0 — the independent SST record
 
-For each dataset, record in the notebook:
-1. The exact URL or query.
-2. The DOI of the dataset (or the download DOI minted at fetch time).
-3. The license under which it is reused.
-4. Any preprocessing applied before the cleaned artefact lands in `data/clean/`.
+| | |
+|---|---|
+| **DOI** | [10.5285/4a9654136a7148e39b7feb56f8bb02d2](https://doi.org/10.5285/4a9654136a7148e39b7feb56f8bb02d2) |
+| **Accessed via** | Copernicus Marine Service ARCO/Zarr store, dataset ID `ESACCI-GLO-SST-L4-REP-OBS-SST` |
+| **Fetched by** | `notebooks/01_data_download.py` (`copernicusmarine`) |
+| **Credentials** | Free account at <https://data.marine.copernicus.eu/register> |
+| **Period / grid** | 1982-01-01 – 2016-12-31, native 0.05°, averaged to 1° in flight |
+| **Licence** | Copernicus Marine Service licence (free reuse with attribution) |
+
+This is the *independent* half of the replication: Oliver et al. used NOAA OISST
+and HadISST, so a different observational basis is what makes this a Replication
+rather than a Reproduction.
+
+**Why CMEMS and not CEDA.** CEDA is the archive of record and openly
+downloadable, but as daily files — ~16.6 MB/day, ~212 GB for the full record.
+CMEMS redistributes the *same product* as an ARCO/Zarr store supporting lazy
+chunked reads, so `01` averages 0.05° → 1° **while streaming** and keeps only
+575 MB of coarsened bands. Same data, tractable access.
+
+> **Do not substitute `C3S-GLO-SST-L4-REP-OBS-SST`.** It sits in the same CMEMS
+> product family but is the Climate Change Service variant, not the ESA CCI one
+> this replication cites. Swapping it would leave the DOI above pointing at data
+> that was not used.
+
+### 2. Multivariate ENSO Index (MEI) — for the Fig. 2 ENSO-removed series
+
+| | |
+|---|---|
+| **Source** | <https://psl.noaa.gov/enso/mei.old/table.html> (Wolter & Timlin) |
+| **Fetched by** | `notebooks/05_enso_removal.py`, cached to `data/raw/mei_original.csv` |
+| **Coverage** | Bimonthly, 1950 – 2018 |
+
+The **original** MEI is used, not NOAA's maintained MEI.v2 successor: it is the
+index the paper cites, and its final update (Dec 2018) postdates the paper, so
+it is effectively the data the authors had. MEI.v2 uses a different variable set
+and base period. This is recorded as a deviation in `05_enso_removal.py`.
+
+## What lands where
+
+| Path | Produced by | Size | Committed? |
+|---|---|---|---|
+| `raw/bands_1deg/` | 01 | ~575 MB | no (resume cache) |
+| `raw/sst_cci_1deg_stride1.nc` | 01 | ~1 GB | no |
+| `raw/mei_original.csv` | 05 | 14 KB | no (re-fetched) |
+| `processed/sst_clean_1deg.nc` | 02 | ~956 MB | no |
+| `processed/enso_chunks_1deg/` | 05 | ~3 GB | no (resume cache) |
+| `processed/sst_enso_removed_1deg.nc` | 05 | ~3 GB | no |
+
+Budget ~5 GB. Everything here is regenerable from the two sources above.
 
 ## Required credentials
 
