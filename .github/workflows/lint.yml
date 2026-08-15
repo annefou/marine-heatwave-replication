@@ -118,6 +118,21 @@ jobs:
           # and a regex over .ipynb JSON is exactly the kind of check that cries
           # wolf — see the note at the top of this file.
 
+          # A notebook missing from the TOC is invisible in the book, and
+          # nothing else catches it: it exists, it is executed, it is in sync,
+          # and the build passes — the reader simply never sees it. Four
+          # notebooks were added in one sitting and none reached the TOC, so
+          # the published book showed a comparison figure while the actual
+          # Figure 2 replica sat unreferenced.
+          for nb in notebooks/*.ipynb; do
+            [ -e "$nb" ] || continue
+            if grep -q "file: $nb" myst.yml; then
+              note "$nb is listed in myst.yml"
+            else
+              bad "$nb exists and is executed but is NOT in myst.yml's toc, so it does not appear in the book at all. Add '- file: $nb' to the toc."
+            fi
+          done
+
           echo "--- placeholder tokens ---"
 
           # CLAUDE.md:62. Only meaningful once /init-template has run: before
