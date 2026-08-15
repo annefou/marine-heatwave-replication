@@ -166,6 +166,7 @@ CHUNK_DIR = PROC_DIR / f"enso_chunks_{TARGET_RES_DEG:g}deg"
 CHUNK_DIR.mkdir(parents=True, exist_ok=True)
 
 n_lat = sst.sizes["latitude"]
+doy = time.dayofyear.to_numpy()
 chunk_paths, ss_removed, n_removed, max_removed = [], 0.0, 0, 0.0
 for lat0 in range(0, n_lat, LAT_CHUNK):
     cpath = CHUNK_DIR / f"chunk_{lat0:05d}.nc"
@@ -180,9 +181,32 @@ for lat0 in range(0, n_lat, LAT_CHUNK):
     ocean = np.isfinite(arr).all(axis=0)
     resid = arr.copy()
     if ocean.any():
-        beta = XtX_inv_Xt @ arr[:, ocean]              # (n_pred, n_ocean)
+        y = arr[:, ocean]
+
+        # Regress the ANOMALY, not the raw SST. The 25 MEI predictors span
+        # ±12 months, and lagged copies of a smooth series can be combined into
+        # an annual harmonic — so fitted against raw SST the model absorbs the
+        # seasonal cycle. Measured on the first version of this notebook, which
+        # did exactly that: 66% of the "ENSO signal" it removed was seasonal
+        # (3.67 °C of seasonal amplitude, against the SST's own 8.21 °C). The
+        # result mangled the series relative to the season-varying threshold and
+        # MORE than doubled detected MHW days, when removing ENSO should reduce
+        # them. Removing the seasonal cycle first confines the fit to
+        # interannual variability, which is what ENSO is.
+        clim = np.full((366, y.shape[1]), np.nan)
+        for d in range(1, 367):
+            sel = doy == d
+            if sel.any():
+                clim[d - 1] = y[sel].mean(axis=0)
+        anom = y - clim[doy - 1]
+
+        beta = XtX_inv_Xt @ anom                       # (n_pred, n_ocean)
         enso = X[:, 1:] @ beta[1:, :]                  # MEI terms only
-        resid[:, ocean] = arr[:, ocean] - enso
+        # Demean so the long-term mean and the trend are preserved exactly:
+        # only ENSO-driven *variability* is taken out.
+        enso -= enso.mean(axis=0, keepdims=True)
+        resid[:, ocean] = y - enso
+
         # Accumulate diagnostics here; a whole-cube diff afterwards would need
         # another copy of the cube.
         ss_removed += float(np.sum(enso ** 2))

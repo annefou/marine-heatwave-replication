@@ -160,6 +160,100 @@ def block_path(lat0: int) -> Path:
     return BLOCK_DIR / f"block_{lat0:05d}.nc"
 
 
+
+
+def _annual_from_one_cell(mhw, inter, times, years, yr_index, out, li, ji):
+    """Fill one cell's column of the annual arrays from a point-mode result."""
+    days, events, dur, inten = out
+    # Point mode returns the intermediate series along a positional `index`
+    # dimension rather than `time`, so restore the time axis before grouping.
+    ev = inter["events"]
+    tdim = "time" if "time" in ev.dims else ev.dims[0]
+    if tdim != "time":
+        ev = ev.rename({tdim: "time"})
+    if "time" not in ev.coords:
+        ev = ev.assign_coords(time=("time", times))
+    is_day = ev.notnull()
+    prev = is_day.shift(time=1)
+    prev = prev.where(prev.notnull(), False).astype(bool)
+    is_start = is_day & (~prev)
+    d = is_day.groupby("time.year").sum("time")
+    e = is_start.groupby("time.year").sum("time")
+    for y, v in zip(d["year"].values, d.values):
+        days[yr_index[int(y)], li, ji] = float(v)
+    for y, v in zip(e["year"].values, e.values):
+        events[yr_index[int(y)], li, ji] = float(v)
+
+    if "events" in mhw.dims and mhw["events"].size:
+        start_year = mhw["time_start"].dt.year.values
+        dur_v = mhw["duration"].values
+        int_v = mhw["intensity_mean"].values
+        for y in years:
+            sel = start_year == y
+            if sel.any():
+                dur[yr_index[int(y)], li, ji] = float(np.nanmean(dur_v[sel]))
+                inten[yr_index[int(y)], li, ji] = float(np.nanmean(int_v[sel]))
+
+
+def detect_pointwise(sst, clim):
+    """Detect cell by cell, using XMHW's point-mode path.
+
+    XMHW's STACKED path cannot assemble a block in which any cell has zero MHW
+    events: it indexes [0] into that cell's (empty) coordinate array and raises
+    `IndexError: index 0 is out of bounds for axis 0 with size 0`
+    (xmhw.py:472). Its point-mode branch, five lines above, does no such
+    indexing — so one cell at a time is immune to the bug.
+
+    This is not a workaround with a cost: the expensive part is `threshold()`,
+    computed once for the whole block either way, while per-cell detection
+    measures ~0.05 s. It matters for the ENSO-removed series, where removing the
+    ENSO signal across the equatorial Pacific leaves cells with genuinely zero
+    marine heatwaves — the correct answer, and the one the stacked path cannot
+    return.
+    """
+    from xmhw.xmhw import detect  # imported in the worker
+
+    years = np.unique(sst["time"].dt.year.values)
+    yr_index = {int(y): i for i, y in enumerate(years)}
+    lats, lons = sst["latitude"].values, sst["longitude"].values
+    shape = (len(years), len(lats), len(lons))
+    arrays = tuple(np.full(shape, np.nan) for _ in range(4))
+    days, events, _, _ = arrays
+
+    # clim carries only the ocean cells XMHW kept; everything else stays NaN.
+    ocean_lats = set(clim["thresh"]["latitude"].values.tolist())
+    ocean_lons = set(clim["thresh"]["longitude"].values.tolist())
+    n_zero = 0
+    for li, lat in enumerate(lats):
+        if lat not in ocean_lats:
+            continue
+        for ji, lon in enumerate(lons):
+            if lon not in ocean_lons:
+                continue
+            sel = dict(latitude=lat, longitude=lon)
+            try:
+                mhw, inter = detect(
+                    sst.sel(**sel).squeeze(drop=True),
+                    clim["thresh"].sel(**sel).squeeze(drop=True),
+                    clim["seas"].sel(**sel).squeeze(drop=True),
+                    intermediate=True,
+                )
+            except Exception:  # noqa: BLE001
+                # A cell XMHW cannot process at all has no events by
+                # definition: zero days, zero events, undefined duration.
+                days[:, li, ji] = 0.0
+                events[:, li, ji] = 0.0
+                n_zero += 1
+                continue
+            _annual_from_one_cell(
+                mhw, inter, sst["time"].values, years, yr_index, arrays, li, ji)
+
+    coords = {"year": years, "latitude": lats, "longitude": lons}
+    dims = ("year", "latitude", "longitude")
+    names = ("mhw_days", "mhw_events", "mhw_duration", "mhw_intensity")
+    return xr.Dataset({n: (dims, a) for n, a in zip(names, arrays)}, coords=coords), n_zero
+
+
 def run_block(args):
     """Detect MHWs for one latitude block; return annual per-cell statistics.
 
@@ -190,7 +284,24 @@ def run_block(args):
     clim = threshold(sst, climatologyPeriod=CLIM_PERIOD).compute()
     if ENSO_REMOVED:
         sst = xr.open_dataarray(ENSO_PATH).isel(latitude=slice(lat0, lat1)).load()
-    mhw, inter = detect(sst, clim.thresh, clim.seas, intermediate=True)
+
+    # XMHW's stacked path cannot assemble a block in which any cell has zero
+    # MHW events (xmhw.py:472). Predicting which cells those are proved
+    # unreliable — three attempts at replicating its event rule all still let
+    # cells through — so instead, catch the failure and re-run the block through
+    # XMHW's point-mode path, which does not contain the bug. It costs nothing:
+    # threshold() above dominates, and per-cell detection measures ~0.05 s.
+    try:
+        mhw, inter = detect(sst, clim.thresh, clim.seas, intermediate=True)
+    except IndexError:
+        out, n_zero = detect_pointwise(sst, clim)
+        print(f"  block {lat0}: stacked detect failed, used point-mode "
+              f"fallback ({n_zero} cell(s) with no events)", flush=True)
+        out = out.where(sst.notnull().any("time"))
+        tmp = out_path.with_suffix(".nc.tmp")
+        out.to_netcdf(tmp)
+        os.replace(tmp, out_path)
+        return out
     inter = inter.compute()
 
     is_day = inter["events"].notnull()

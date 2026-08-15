@@ -64,10 +64,16 @@ ENSO_ANNUAL = f"{RESULTS}/mhw_annual_{RES}deg_enso_removed.nc"
 ENSO_COMPARISON = f"{RESULTS}/headline_comparison_enso_removed.json"
 
 
+SST_STATS = f"{RESULTS}/sst_annual_stats_{RES}deg.nc"
+FIG2 = f"{FIGURES}/figure2_replica.png"
+FIG3 = f"{FIGURES}/figure3_replica.png"
+
+
 rule all:
     input:
         [MAIN_FIG, COMPARISON]
-        + ([ENSO_ANNUAL, ENSO_COMPARISON] if IS_FULL_REPLICATION else []),
+        + ([ENSO_ANNUAL, ENSO_COMPARISON, SST_STATS, FIG2, FIG3]
+           if IS_FULL_REPLICATION else []),
 
 
 # ---------- 01: Data download ----------
@@ -161,3 +167,45 @@ rule figures:
     shell:
         "mkdir -p {RESULTS}/logs && cd {NOTEBOOKS} && "
         "jupytext --to notebook --execute 04_figures.py 2>&1 | tee ../{log}"
+
+
+# ---------- 06: Annual SST moments (Fig. 3d-f) ----------
+rule sst_statistics:
+    input:
+        CLEAN_SST,
+    output:
+        SST_STATS,
+    log:
+        f"{RESULTS}/logs/06_sst_statistics.log",
+    shell:
+        "mkdir -p {RESULTS}/logs && cd {NOTEBOOKS} && "
+        "jupytext --to notebook --execute 06_sst_statistics.py 2>&1 | tee ../{log}"
+
+
+# ---------- 07: Figure 2 replica ----------
+rule figure2:
+    input:
+        ANNUAL,
+        ENSO_ANNUAL,
+        COMPARISON,
+    output:
+        FIG2,
+    log:
+        f"{RESULTS}/logs/07_figure2.log",
+    shell:
+        "mkdir -p {RESULTS}/logs && cd {NOTEBOOKS} && "
+        "jupytext --to notebook --execute 07_figure2.py 2>&1 | tee ../{log}"
+
+
+# ---------- 08: Figure 3 replica ----------
+rule figure3:
+    input:
+        ANNUAL,
+        SST_STATS,
+    output:
+        FIG3,
+    log:
+        f"{RESULTS}/logs/08_figure3.log",
+    shell:
+        "mkdir -p {RESULTS}/logs && cd {NOTEBOOKS} && "
+        "jupytext --to notebook --execute 08_figure3.py 2>&1 | tee ../{log}"
