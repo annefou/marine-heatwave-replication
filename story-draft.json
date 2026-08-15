@@ -1,0 +1,17 @@
+{
+  "template": "STORY",
+  "_notes": "Story draft for the Science Live /np/create/story wizard. Pins the two published AI audience summaries over the Validated Replication Outcome apex.",
+  "apex": "https://w3id.org/sciencelive/np/RAGjvtR-Pq6576AIEsj5CTiLW3yK0cPEbfgk7OjhxyVVM",
+  "headline": "Longer and more frequent marine heatwaves — independently confirmed",
+  "framing": "A signed replication of Oliver et al. (2018). Using independent satellite sea-surface temperature (ESA CCI) and independent detection software (XMHW), the satellite-era rise in marine-heatwave days is Validated — and robust to El Nino. The century-scale \"54%\" figure is deliberately out of scope. Retold below for citizens and for schools.",
+  "summaries": [
+    {"uri": "https://w3id.org/np/RAwGVnm2oxnLVNYR18dmkFqbqFL4ZYw3yX0x0CxXzdzS8", "audience": "http://www.wikidata.org/entity/Q2388316", "position": 1},
+    {"uri": "https://w3id.org/np/RAaYmBJ1IAyn75wkl_G3zDC7NmV7Rz2KlwU6J3f5JQujY", "audience": "https://w3id.org/sciencelive/o/terms/audience/secondary-13-16", "position": 2}
+  ],
+  "hero": {
+    "contentUrl": "https://raw.githubusercontent.com/annefou/marine-heatwave-replication/main/figures/figure2_replica.png",
+    "caption": "Global-mean marine-heatwave days, 1982-2016, from independent ESA CCI SST and XMHW — reproducing Oliver et al. (2018) Figure 2. The rising trend survives ENSO removal.",
+    "doi": null
+  },
+  "figures": []
+}
