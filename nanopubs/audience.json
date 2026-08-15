@@ -1,0 +1,77 @@
+{
+  "glance": {
+    "title": "What this replication found, at a glance",
+    "note": "Marine-heatwave days rose over the satellite era (1982–2016) — confirmed with independent data and software.",
+    "items": [
+      {
+        "label": "Marine-heatwave days are rising",
+        "sub": "MHW-days trend, 1982–2016",
+        "says": "confirmed"
+      }
+    ]
+  },
+  "audiences": [
+    {
+      "id": "citizens",
+      "label": "For citizens",
+      "icon": "users",
+      "level": "General public — no science background needed",
+      "title": "Are marine heatwaves really becoming more common?",
+      "lead": "A 2018 study reported that the ocean now has many more “marine-heatwave days” — days when the sea surface is unusually hot — than it used to. We re-checked that finding using completely different data and a different program, and it holds up.",
+      "sections": [
+        {
+          "h": "What was tested",
+          "p": "One specific finding from the 2018 paper: that between 1982 and 2016 the world's oceans gained roughly 30 more marine-heatwave days a year. We did not test the paper's better-known headline — a 54% rise measured back over a whole century — because that one cannot be checked independently; we explain why in “What we did not test”."
+        },
+        {
+          "h": "What was found",
+          "p": "It is confirmed. Using satellite sea-surface temperatures from the European Space Agency's climate record (not the American data the original used) and a separate, independent piece of software to spot the heatwaves, we measured almost the same rise — about 32 extra marine-heatwave days over the period, against the 30 the original reported, a difference of about 6%. The frequency and the length of heatwaves also went up, matching the original."
+        },
+        {
+          "h": "Does natural variability explain it?",
+          "p": "No. When we removed the effect of El Niño and La Niña — the natural warm/cool swings in the Pacific — the rise was only slightly smaller and was still there. So the trend is not just a side-effect of those cycles."
+        },
+        {
+          "h": "Why this carries weight",
+          "p": "The two studies share neither the data nor the software, so their agreement is evidence about the finding itself, not a mistake copied from one to the other. A shared dataset or shared code could hide the same error in both; here nothing was shared."
+        },
+        {
+          "h": "What we did not test",
+          "p": "The paper's famous “54% over the past century” figure needs daily temperature records from before 1981, and no independent global record that far back exists — for anyone. So we tested only the satellite era (about a third of the paper's span) and say so plainly, rather than claiming more than the data allows."
+        }
+      ],
+      "closing": "Different data, different software, same answer: marine-heatwave days really are rising."
+    },
+    {
+      "id": "schools",
+      "label": "For schools",
+      "icon": "graduation-cap",
+      "level": "Secondary school · ages ~13–16",
+      "title": "Checking a climate result the honest way",
+      "lead": "When scientists publish a result, others should be able to get the same answer with different tools. We tried exactly that with a marine-heatwave study — a good example of how science checks itself.",
+      "sections": [
+        {
+          "h": "The question",
+          "p": "A 2018 paper reported that marine heatwaves — spells when the sea surface is unusually hot — became more frequent and longer. We re-tested one part: did the number of marine-heatwave days per year really rise between 1982 and 2016?"
+        },
+        {
+          "h": "The test",
+          "p": "We deliberately swapped the ingredients. Instead of the American sea-surface-temperature data the original used, we used satellite data from the European Space Agency; instead of the original team's own program, we used a different, independent one. The rule for what counts as a “heatwave” was kept identical, so the comparison was fair."
+        },
+        {
+          "h": "The result",
+          "p": "The numbers matched closely: about 32 extra heatwave days over the period against the 30 the original found — within about 6%. Heatwave frequency and length also rose, agreeing with the original. And the trend stayed even after we removed the influence of El Niño."
+        },
+        {
+          "h": "Being honest about limits",
+          "p": "We were careful to say what we could NOT check: the paper's famous “54% over a century” figure needs daily records from before 1981 that don't exist independently, so we left it clearly out of scope. Good science states what it can and cannot show."
+        },
+        {
+          "h": "The lesson",
+          "p": "Getting the same answer with different data and different software is strong evidence, because a shared dataset or shared code could hide the same mistake in both — and here nothing was shared. That is what independent replication is for."
+        }
+      ],
+      "closing": "Same answer from independent tools = strong evidence — and saying what you didn't test matters just as much."
+    }
+  ]
+}
