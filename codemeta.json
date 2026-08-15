@@ -8,8 +8,12 @@
   "dateModified": "2026-08-15",
   "license": "https://spdx.org/licenses/MIT",
   "codeRepository": "https://github.com/annefou/marine-heatwave-replication",
-  "identifier": "{{ZENODO_DOI}}",
-  "@id": "{{ZENODO_DOI}}",
+  "identifier": [
+    "https://doi.org/10.5281/zenodo.21950032",
+    "https://doi.org/10.5281/zenodo.21950033",
+    "swh:1:rev:80f8e7d98a7e1d79904e347fd94de5e3d3ff04bd;origin=https://github.com/annefou/marine-heatwave-replication"
+  ],
+  "@id": "https://doi.org/10.5281/zenodo.21950032",
   "programmingLanguage": {
     "@type": "ComputerLanguage",
     "name": "Python",
