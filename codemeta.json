@@ -3,9 +3,9 @@
   "@type": "SoftwareSourceCode",
   "name": "marine-heatwave-replication",
   "description": "Independent replication of the Oliver et al. (2018) marine heatwave trend analysis, using ESA SST_cci satellite sea surface temperature and the XMHW detection package.",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "dateCreated": "2026-08-13",
-  "dateModified": "2026-08-13",
+  "dateModified": "2026-08-15",
   "license": "https://spdx.org/licenses/MIT",
   "codeRepository": "https://github.com/annefou/marine-heatwave-replication",
   "identifier": "{{ZENODO_DOI}}",
@@ -15,7 +15,10 @@
     "name": "Python",
     "version": "3.12"
   },
-  "operatingSystem": ["Linux", "macOS"],
+  "operatingSystem": [
+    "Linux",
+    "macOS"
+  ],
   "author": [
     {
       "@type": "Person",
