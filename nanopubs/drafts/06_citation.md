@@ -26,7 +26,6 @@ The Outcome is the citing work: it is the Outcome that stands in a citation
 relation to the original paper, not the repository or the study design. Pulled
 from `nanopubs/PUBLISHED.md` row 05, or pre-filled by the chain wizard.
 
-<!-- field: citations -->
 ### List citations (repeatable group, required ≥ 1)
 
 **Item 1 — the paper under replication**

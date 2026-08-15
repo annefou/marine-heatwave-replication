@@ -30,7 +30,7 @@ the assertion under test, and the same slug should make sense to anyone else who
 tests it.
 
 <!-- field: label -->
-### Label of the claim (to find it later) (text input, required)
+### Label of the claim, to find it later (text input, required)
 
 ```
 Increase in globally averaged marine heatwave days over the 1982-2016 satellite record
@@ -58,7 +58,7 @@ published via Nanodash (`w3id.org/np/…`) as opposed to Science Live
 the documented workaround for the datasets+publications bug — paste the URI
 manually instead of relying on search.
 
-<!-- field: type -->
+<!-- field: forrtType -->
 ### Type of FORRT claim (dropdown, required)
 
 ```
@@ -78,6 +78,14 @@ bumble bee extirpation) as `descriptive pattern`.
 the trend, not the object of the claim. Per the same vocabulary: "empirical
 relationships discovered by fitting a model are `descriptive pattern` (the model
 is the instrument; the pattern is the claim)."
+
+- [ ] computational performance (Computational & Performance)
+- [ ] data governance (access control, licensing, FAIR compliance)
+- [ ] data quality (preprocessing, validation, normalization)
+- [ ] descriptive pattern (distribution, trend, proportion)
+- [ ] model performance (accuracy, F1 score, evaluation metrics)
+- [ ] scalability (Computational & Performance)
+- [ ] statistical significance (significant difference, relationship, or effect)
 
 <!-- field: source -->
 ### Source URI (text input, optional)

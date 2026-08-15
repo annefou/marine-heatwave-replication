@@ -42,13 +42,13 @@ would read as validating the paper — including the 54 percent century-scale
 figure this outcome does not touch.
 
 <!-- field: study -->
-### Search for a FORRT replication study (search/select, required)
+### Choose study (search/select, required)
 
 ```
 «URI of step 04 (FORRT Replication Study)»
 ```
 
-<!-- field: repository -->
+<!-- field: repo -->
 ### Repository URL (text input, required)
 
 ```
@@ -59,14 +59,14 @@ Matches the `repository-code` in `CITATION.cff` and the repository's git remote.
 `/verify-chain` cross-checks these against each other.
 
 <!-- field: date -->
-### Completion date (date picker, required)
+### Choose completion date (text input, required)
 
 ```
 2026-08-15
 ```
 
-<!-- field: status -->
-### Validation status (dropdown, required)
+<!-- field: validationStatus -->
+### Choose validation status (dropdown, required)
 
 ```
 Validated
@@ -82,8 +82,14 @@ fails to support the claim. The unresolved item (marine heatwave intensity
 trends, see limitations) is not part of the claim under test; it is a
 supplementary map in the original's Figure 3b.
 
-<!-- field: confidence -->
-### Confidence level (dropdown, required)
+- [ ] contradicted
+- [ ] inconclusive
+- [ ] not tested
+- [ ] partially supported
+- [ ] validated
+
+<!-- field: confidenceLevel -->
+### Choose confidence level (dropdown, required)
 
 ```
 HighConfidence
@@ -94,6 +100,12 @@ which the vocabulary reserves for extensive evidence with high agreement: this
 replication covers 93.3 percent of longitudes, leaves the intensity discrepancy
 unexplained, and did not attempt the excess-trend attribution. The evidence for
 the claim itself is strong; the coverage of the original paper is partial.
+
+- [ ] high - Strong evidence, mostly agrees with original
+- [ ] low - Limited evidence, significant disagreement
+- [ ] moderate - Adequate evidence, partial agreement
+- [ ] very high - Extensive evidence, high agreement with original
+- [ ] very low - Minimal evidence, major disagreement
 
 <!-- field: conclusion -->
 ### Describe the overall conclusion about the original claim (textarea, required)

@@ -33,7 +33,7 @@ Replication of the satellite-era marine heatwave day trend using ESA SST CCI and
 ```
 
 <!-- field: type -->
-### Study type (dropdown, required)
+### Choose the study type (dropdown, required)
 
 ```
 Replication Study
@@ -51,8 +51,12 @@ What is held **fixed** is the *definition* — Hobday et al. (2016), with the
 paper's stated parameters. That is what makes this a replication rather than a
 different study: same question, same definition, independent instruments.
 
+- [ ] Replication Study - replication with different methodology or conditions
+- [ ] Reproduction/Replication Study - study that is both, reproduction and replication
+- [ ] Reproduction Study - direct reproduction: same methodology, same tools
+
 <!-- field: claim -->
-### Search for a FORRT claim (search/select, required)
+### Choose FORRT claim (search/select, required)
 
 ```
 «URI of step 03 (FORRT Claim)»
@@ -62,7 +66,7 @@ Pre-filled by the chain wizard; otherwise search for the claim label
 "Increase in globally averaged marine heatwave days over the 1982-2016 satellite record".
 
 <!-- field: scope -->
-### Describe what part of the claim is reproduced/replicated (textarea, required)
+### Describe what part of the claim is reproduced/replicated. (textarea, required)
 
 ```
 This study tests the claim's satellite-era component: the change in globally
@@ -89,8 +93,8 @@ detections and was not performed.
 **Scope, not method and not results** — per `docs/pico-study-outcome-levels.md`.
 No numbers appear here; they belong in the Outcome.
 
-<!-- field: method -->
-### Describe how the claim is reproduced/replicated (textarea, required)
+<!-- field: methodology -->
+### Describe how the claim is reproduced/replicated. (textarea, required)
 
 ```
 Daily sea surface temperature from ESA SST CCI Analysis v3.0 was streamed from
@@ -124,8 +128,8 @@ defined relative to real-world conditions.
 parameter above was read from `notebooks/03_analysis.py` and
 `notebooks/05_enso_removal.py`, not recalled (`docs/verify-before-drafting.md`).
 
-<!-- field: deviations -->
-### Describe any deviations from original methodology (textarea, optional)
+<!-- field: deviation -->
+### Describe any deviations from original methodology. (textarea, optional)
 
 ```
 1. Sea surface temperature source. ESA SST CCI Analysis v3.0 rather than NOAA
@@ -171,8 +175,8 @@ checking that intermediate outputs were physically plausible, not by reading the
 paper more carefully — both are recorded because a reader reproducing this from
 the paper's wording alone would hit the same problem.
 
-<!-- field: keywords -->
-### Search keywords (Wikidata) (multi-select, optional)
+<!-- field: keyword -->
+### Search keywords (Wikidata) (search/select, optional)
 
 Search labels to enter in the form (select the matching Wikidata item; do not
 paste QIDs, and confirm each item's type before selecting):
@@ -183,7 +187,7 @@ paste QIDs, and confirm each item's type before selecting):
 - `time series analysis`
 
 <!-- field: discipline -->
-### Search discipline (Wikidata) (search, optional)
+### Search discipline (Wikidata) (search/select, optional)
 
 ```
 oceanography

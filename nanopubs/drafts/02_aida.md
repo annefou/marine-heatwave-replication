@@ -17,7 +17,7 @@
 ## Field-by-field draft
 
 <!-- field: aida -->
-### Enter your AIDA sentence here (textarea, required)
+### AIDA sentence (text input, required)
 
 ```
 The globally averaged number of marine heatwave days per year increased by approximately 30 days between 1982 and 2016, from a baseline of about 25 days per year in the 1980s.
@@ -47,8 +47,8 @@ itself extracted from `paper/oliver-2018.pdf` with `pdftotext` and matched
 programmatically. Period stated as 1982–2016 because that is the satellite
 record the quoted "35-year period" refers to (`00_paper_summary.md`).
 
-<!-- field: topics -->
-### Select related topics/tags (dropdown, optional)
+<!-- field: topic -->
+### Select related topics/tags (search/select, optional)
 
 *Select in the form* — this is a closed vocabulary rendered as a dropdown, and
 its option list is not documented in `docs/forrt-form-fields.md`. Per the
@@ -58,8 +58,8 @@ Open the dropdown and look for terms matching: *marine heatwave*, *sea surface
 temperature*, *climate change*, *oceanography*. Pick only labels that actually
 appear.
 
-<!-- field: relates -->
-### Relates to this nanopublication (text input, required)
+<!-- field: project -->
+### Relates to this nanopublication (search/select, required)
 
 ```
 «URI of step 01 (Quote-with-comment)»
@@ -69,8 +69,8 @@ Filled automatically by the Science Live chain wizard, which carries each
 published URI into the next step's back-reference. If publishing by hand, paste
 the Quote URI from `nanopubs/PUBLISHED.md` row 01.
 
-<!-- field: datasets -->
-### Supported by datasets (repeatable, optional)
+<!-- field: dataset -->
+### Supported by datasets (text input, optional)
 
 *(skip — optional)*
 
@@ -84,8 +84,8 @@ Deliberately left empty. Two reasons:
    populated has previously failed on Science Live. Only one group is populated
    here, and the publication is the more informative of the two.
 
-<!-- field: publications -->
-### Supported by other publications (repeatable, optional)
+<!-- field: publication -->
+### Supported by other publications (text input, optional)
 
 **Item 1**
 
