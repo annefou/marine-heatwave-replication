@@ -14,16 +14,30 @@
 # ---
 
 # %% [markdown]
-# # 04 — Figures
+# # 04 — Headline comparison
 #
-# Produces `figures/main_result.png`: the replication of **Figure 2** of Oliver
-# et al. (2018) — globally averaged total marine heatwave days per year — beside
-# a direct comparison of the headline statistics.
+# Produces `figures/main_result.png`, the **verdict figure**: does this
+# replication reproduce the number the original claims? It puts our series
+# beside the trend the original reports, and compares the three headline
+# statistics directly.
 #
-# The original Figure 2 also plots an ENSO-removed series (red line). We do not
-# reproduce that line: it requires regressing daily SST on the multivariate ENSO
-# index at every pixel, which is a separate analysis from the claim under test.
-# Its absence is a scope limitation, not a disagreement.
+# ## This is not the Figure 2 replica
+#
+# Two different jobs, deliberately kept apart:
+#
+# | Notebook | Figure | Question it answers |
+# |---|---|---|
+# | **04** (here) | `main_result.png` | *Did the number replicate?* Ours against the original's reported values. |
+# | **07** | `figure2_replica.png` | *Does it look like the paper's Fig. 2?* Same axes, same colours, both curves, ENSO shading. |
+# | **08** | `figure3_replica.png` | The same, for the paper's Fig. 3. |
+#
+# A comparison figure and a replica are answering different questions, and one
+# cannot do both: this one shows a line the paper does not plot (the original's
+# stated 25→55 trend) so the two can be judged against each other, while the
+# replica shows only what the paper shows so the two can be laid side by side.
+#
+# For the ENSO-removed series — the red line of the original Figure 2 — see
+# notebook 07. It is reproduced there in full.
 
 # %%
 import json
@@ -84,7 +98,7 @@ years = res.year.values
 days = res["global_mhw_days"].values
 
 # %% [markdown]
-# ## Figure 2 replication + headline comparison
+# ## The verdict: our series against the original's reported trend
 
 # %%
 fig, (ax, ax2) = plt.subplots(
@@ -107,8 +121,11 @@ ax.plot([years[0], years[-1]], [o_base, o_end], color="tab:blue", lw=1.6, ls=":"
 
 ax.set_xlabel("Year")
 ax.set_ylabel("Annual MHW days (global mean)")
+# Not "replication of Fig. 2" — notebook 07 holds that. This panel compares
+# our series against the trend the original reports, which is a different claim.
 ax.set_title("Total marine heatwave days globally\n"
-             "replication of Oliver et al. (2018) Fig. 2", fontsize=11)
+             "this replication vs the trend reported by Oliver et al. (2018)",
+             fontsize=11)
 ax.legend(fontsize=8, loc="upper left")
 
 # --- Panel B: headline statistics, original vs replication -------------------
@@ -133,7 +150,7 @@ ax2.set_yticks(y)
 ax2.set_yticklabels([m[0] for m in metrics], fontsize=9)
 ax2.invert_yaxis()
 ax2.set_xlabel("Value (units differ per row — see labels)")
-ax2.set_title("Headline statistics", fontsize=11)
+ax2.set_title("Headline statistics: original vs replication", fontsize=11)
 ax2.legend(fontsize=8, loc="lower right")
 
 # Provenance comes from the comparison JSON that 03 wrote, never from literals
