@@ -82,7 +82,7 @@ is the instrument; the pattern is the claim)."
 - [ ] computational performance (Computational & Performance)
 - [ ] data governance (access control, licensing, FAIR compliance)
 - [ ] data quality (preprocessing, validation, normalization)
-- [ ] descriptive pattern (distribution, trend, proportion)
+- [x] descriptive pattern (distribution, trend, proportion)
 - [ ] model performance (accuracy, F1 score, evaluation metrics)
 - [ ] scalability (Computational & Performance)
 - [ ] statistical significance (significant difference, relationship, or effect)

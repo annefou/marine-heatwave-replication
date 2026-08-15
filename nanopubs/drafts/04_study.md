@@ -51,7 +51,7 @@ What is held **fixed** is the *definition* — Hobday et al. (2016), with the
 paper's stated parameters. That is what makes this a replication rather than a
 different study: same question, same definition, independent instruments.
 
-- [ ] Replication Study - replication with different methodology or conditions
+- [x] Replication Study - replication with different methodology or conditions
 - [ ] Reproduction/Replication Study - study that is both, reproduction and replication
 - [ ] Reproduction Study - direct reproduction: same methodology, same tools
 

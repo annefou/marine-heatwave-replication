@@ -86,7 +86,7 @@ supplementary map in the original's Figure 3b.
 - [ ] inconclusive
 - [ ] not tested
 - [ ] partially supported
-- [ ] validated
+- [x] validated
 
 <!-- field: confidenceLevel -->
 ### Choose confidence level (dropdown, required)
@@ -101,7 +101,7 @@ replication covers 93.3 percent of longitudes, leaves the intensity discrepancy
 unexplained, and did not attempt the excess-trend attribution. The evidence for
 the claim itself is strong; the coverage of the original paper is partial.
 
-- [ ] high - Strong evidence, mostly agrees with original
+- [x] high - Strong evidence, mostly agrees with original
 - [ ] low - Limited evidence, significant disagreement
 - [ ] moderate - Adequate evidence, partial agreement
 - [ ] very high - Extensive evidence, high agreement with original
