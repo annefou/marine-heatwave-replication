@@ -81,6 +81,33 @@
         },
         {
           "@id": "nanopubs/PUBLISHED.md"
+        },
+        {
+          "@id": "notebooks/05_enso_removal.py"
+        },
+        {
+          "@id": "notebooks/06_sst_statistics.py"
+        },
+        {
+          "@id": "notebooks/07_figure2.py"
+        },
+        {
+          "@id": "notebooks/08_figure3.py"
+        },
+        {
+          "@id": "figures/figure2_replica.png"
+        },
+        {
+          "@id": "figures/figure3_replica.png"
+        },
+        {
+          "@id": "scripts/check_coverage_sensitivity.py"
+        },
+        {
+          "@id": "scripts/compare_runs.py"
+        },
+        {
+          "@id": "scripts/check_colorblind_safe.py"
         }
       ],
       "citation": [
@@ -175,7 +202,7 @@
         "SoftwareSourceCode",
         "Notebook"
       ],
-      "name": "01 — Data download",
+      "name": "01 \u2014 Data download",
       "programmingLanguage": "Python"
     },
     {
@@ -185,7 +212,7 @@
         "SoftwareSourceCode",
         "Notebook"
       ],
-      "name": "02 — Data clean",
+      "name": "02 \u2014 Data clean",
       "programmingLanguage": "Python"
     },
     {
@@ -195,7 +222,7 @@
         "SoftwareSourceCode",
         "Notebook"
       ],
-      "name": "03 — Analysis",
+      "name": "03 \u2014 Analysis",
       "programmingLanguage": "Python"
     },
     {
@@ -205,7 +232,7 @@
         "SoftwareSourceCode",
         "Notebook"
       ],
-      "name": "04 — Figures",
+      "name": "04 \u2014 Figures",
       "programmingLanguage": "Python"
     },
     {
@@ -242,6 +269,96 @@
       "@type": "ScholarlyArticle",
       "name": "Longer and more frequent marine heatwaves over the past century",
       "datePublished": "2018"
+    },
+    {
+      "@id": "notebooks/05_enso_removal.py",
+      "@type": [
+        "File",
+        "SoftwareSourceCode"
+      ],
+      "name": "ENSO removal",
+      "description": "Regresses daily SST anomalies onto the multivariate ENSO index with monthly leads and lags to +/-1 year and subtracts the fitted ENSO component, producing the input for the ENSO-removed series of the paper's Figure 2.",
+      "encodingFormat": "text/x-python"
+    },
+    {
+      "@id": "notebooks/06_sst_statistics.py",
+      "@type": [
+        "File",
+        "SoftwareSourceCode"
+      ],
+      "name": "Annual SST moments",
+      "description": "Annual mean, variance and skewness of sea surface temperature per cell; variance and skewness are computed on deseasonalised anomalies. Produces panels d-f of the paper's Figure 3.",
+      "encodingFormat": "text/x-python"
+    },
+    {
+      "@id": "notebooks/07_figure2.py",
+      "@type": [
+        "File",
+        "SoftwareSourceCode"
+      ],
+      "name": "Figure 2 replica",
+      "description": "Reproduces Oliver et al. (2018) Figure 2 in the published layout: globally averaged marine heatwave days with and without the ENSO signature, and El Nino / La Nina shading.",
+      "encodingFormat": "text/x-python"
+    },
+    {
+      "@id": "notebooks/08_figure3.py",
+      "@type": [
+        "File",
+        "SoftwareSourceCode"
+      ],
+      "name": "Figure 3 replica",
+      "description": "Reproduces Oliver et al. (2018) Figure 3: Theil-Sen trend maps for marine heatwave frequency, intensity and duration, and for SST mean, variance and skewness.",
+      "encodingFormat": "text/x-python"
+    },
+    {
+      "@id": "figures/figure2_replica.png",
+      "@type": [
+        "File",
+        "ImageObject"
+      ],
+      "name": "Figure 2 replica (image)",
+      "description": "Replication of the paper's Figure 2, drawn to the original's layout and colours so the two can be compared directly.",
+      "encodingFormat": "image/png"
+    },
+    {
+      "@id": "figures/figure3_replica.png",
+      "@type": [
+        "File",
+        "ImageObject"
+      ],
+      "name": "Figure 3 replica (image)",
+      "description": "Replication of the paper's Figure 3, six trend panels.",
+      "encodingFormat": "image/png"
+    },
+    {
+      "@id": "scripts/check_coverage_sensitivity.py",
+      "@type": [
+        "File",
+        "SoftwareSourceCode"
+      ],
+      "name": "Coverage sensitivity check",
+      "description": "Measures how much the headline statistic depends on which longitudes were sampled; supports the coverage caveat in the Replication Outcome.",
+      "encodingFormat": "text/x-python"
+    },
+    {
+      "@id": "scripts/compare_runs.py",
+      "@type": [
+        "File",
+        "SoftwareSourceCode"
+      ],
+      "name": "Run-to-run reproducibility check",
+      "description": "Compares the headline statistics of two complete pipeline runs; supports the reproducibility statement in the Replication Outcome.",
+      "encodingFormat": "text/x-python"
+    },
+    {
+      "@id": "scripts/check_colorblind_safe.py",
+      "@type": [
+        "File",
+        "SoftwareSourceCode"
+      ],
+      "name": "Figure colour-vision check",
+      "description": "Simulates colour-vision deficiency on the figure palette to confirm the borrowed colours remain legible.",
+      "encodingFormat": "text/x-python"
     }
   ]
 }

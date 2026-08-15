@@ -4,7 +4,7 @@
   "chain_shape": "paper-rooted",
   "source": {
     "repository": "https://github.com/annefou/marine-heatwave-replication",
-    "commit": "ebca042232148ed0aeb735a66dde81019f117fb4",
+    "commit": "eb3a339b1b9d86e2d1d08a976f6a78f7f4091a1a",
     "figure": "figures/main_result.png"
   },
   "steps": [
@@ -108,7 +108,8 @@
       "prefill": {
         "outcome": "oliver-2018-mhw-days-outcome",
         "label": "Satellite-era (1982-2016) marine heatwave day trend validated with independent data and software; century-scale claims not tested",
-        "date": "2026-08-13",
+        "repo": "https://doi.org/10.5281/zenodo.21950033",
+        "date": "2026-08-15",
         "validationStatus": "https://w3id.org/sciencelive/o/terms/Validated",
         "conclusion": "WHAT WAS TESTED. One claim of the original paper: its satellite-era result that\nglobally averaged marine heatwave days rose by about 30 days per year over\n1982-2016, from a baseline of about 25 days in the 1980s. That claim, and only\nthat claim, is what this outcome validates. The paper's better-known abstract\nfigure - a 54 percent increase in marine heatwave days - describes a different\nanalysis over a different period and was NOT tested here. See the limitations.\n\nRESULT. The claim is validated. Using ESA SST CCI Analysis v3.0 in place of\nNOAA OI SST and XMHW in place of the original authors' own implementation,\nglobally averaged marine heatwave days increased by 31.77 days over 1982-2016,\nagainst the 30 days reported originally - a difference of 6 percent. The two\nsupporting metrics also agree: marine heatwave frequency increased by 0.433\nevents per decade against 0.45 reported, and mean duration by 1.482 days per\ndecade against 1.3 reported. All three trends are significant at the 5 percent\nlevel, as in the original.\n\nThe trend is not an artefact of El Nino Southern Oscillation variability. After\nremoving the ENSO signature from the temperature record, the increase is 29.82\ndays over the record - 6 percent smaller - and remains significant. This\nreproduces the original's own argument for the same conclusion, independently.\n\nWHY THE AGREEMENT CARRIES WEIGHT. Both the observational basis and the software\nwere replaced. A shared dataset or a shared codebase can carry a common error\ninto a reproduction; here neither is shared with the original, so the agreement\nis evidence about the finding rather than about the pipeline.",
         "evidence": "Data: ESA SST CCI Analysis v3.0 (DOI 10.5285/4a9654136a7148e39b7feb56f8bb02d2),\n1 January 1982 to 31 December 2016, 1 degree analysis grid, 30,774 ocean cells,\nclimatology 1983-2012.\nSoftware: XMHW 1.0.0, archived at\nswh:1:rev:1006312ae693e8aef8bd3706b9afb431eca564a5.\n\nMarine heatwave days, globally averaged, Theil-Sen trend:\n  change over the record   31.77 days   (original: 30)\n  trend                    9.344 days per decade, 95% CI [6.354, 12.938]\n  significant at 5%        yes\n  1980s baseline           21.70 days   (original: about 25)\n\nMarine heatwave frequency: 0.433 events per decade (original: 0.45), significant.\nMarine heatwave duration:  1.482 days per decade (original: 1.3), significant.\n\nWith the ENSO signature removed: 29.82 days over the record, 8.770 days per\ndecade, significant. The globally averaged series falls below the unadjusted\nseries in 34 of 35 years, with the largest reductions in 1998, 2010 and 2016 -\nthe major El Nino years.\n\nThe 1980s baseline of 21.70 days is not distinguishable from the original's\napproximately 25: the 1982-1989 mean has a 95% confidence interval of\n[14.60, 28.79] (n=8, s.d. 8.49), which contains 25, and a one-sample t-test\ngives t = -1.10, p = 0.31. Interannual variability over that window is large,\nranging from 12.49 days in 1985 to 34.47 days in 1983.\n\nReproducibility of these numbers was tested directly rather than assumed. Two\ncomplete independent runs of the pipeline, which failed on different latitude\nblocks and were retried differently, produced identical headline statistics to\nall reported digits (scripts/compare_runs.py).",
@@ -118,6 +119,7 @@
       "provenance": {
         "outcome": "nanopubs/drafts/05_outcome.md",
         "label": "nanopubs/drafts/05_outcome.md",
+        "repo": "CITATION.cff",
         "date": "CITATION.cff",
         "validationStatus": "nanopubs/drafts/05_outcome.md",
         "conclusion": "nanopubs/drafts/05_outcome.md",
@@ -154,7 +156,7 @@
       "template_uri": "https://w3id.org/np/RApmrqOEr4f5bJC2vayrTnzhwnuEfAU_I4Pdg8K5JxeBw",
       "prefill": {
         "synthesis": "annefou-marine-heatwave-replication-synthesis",
-        "date": "2026-08-13"
+        "date": "2026-08-15"
       },
       "provenance": {
         "synthesis": "derived (<org>-<repo>-<step>)",
