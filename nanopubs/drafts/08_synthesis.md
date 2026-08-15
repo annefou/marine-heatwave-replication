@@ -1,4 +1,25 @@
-# 08 — Research Synthesis (optional)
+# 08 — Research Synthesis
+
+> **NOT APPLICABLE to this replication — deliberately not published.**
+>
+> The template's own description is *"Synthesise findings across **multiple**
+> replication outcomes"*, and `docs/forrt-form-fields.md` is explicit that it
+> exists to *"bind multiple parallel FORRT chains together under one
+> cross-cutting conclusion"* — the typical case being three Outcomes from three
+> independent chains testing different facets of a shared property.
+>
+> This repository publishes **one** chain with **one** Outcome. A synthesis over
+> a single outcome is not a synthesis: its four required fields (Conclusion,
+> Recommendations, Conditions, Limitations) would restate the Outcome's, and it
+> would assert a cross-cutting finding on a public network that does not exist.
+>
+> It becomes appropriate if this claim is later tested by further independent
+> chains — then the synthesis names what they jointly establish.
+>
+> This file is kept as a skeleton, unfilled, so the option stays visible. It is
+> excluded from `chain-draft.json` because no field carries a value; it was
+> previously included only because the shipped skeleton had a date in a fence,
+> which `build_chain_draft.py` read as drafted content. (optional)
 
 > Run the pre-flight checklist in `docs/forrt-form-fields.md` § Pre-flight checklist before drafting.
 >
@@ -66,8 +87,9 @@ What was not tested? What might not generalise?
 ### Completion date (text input, required)
 
 ```
-2026-08-13
 ```
+
+*(empty — this step is not applicable; see the note at the top)*
 
 <!-- field: source -->
 ### Supporting sources (text input, required)

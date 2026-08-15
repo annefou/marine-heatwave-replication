@@ -4,7 +4,7 @@
   "chain_shape": "paper-rooted",
   "source": {
     "repository": "https://github.com/annefou/marine-heatwave-replication",
-    "commit": "eb3a339b1b9d86e2d1d08a976f6a78f7f4091a1a",
+    "commit": "56556394a9b2572cbf80ed2869075fca29673526",
     "figure": "figures/main_result.png"
   },
   "steps": [
@@ -149,20 +149,6 @@
         "st02": "cites = validation status (see 05_outcome); cited = CITATION.cff references[article]"
       },
       "published_uri": null
-    },
-    {
-      "step": "08_synthesis",
-      "template_key": "RESEARCH_SYNTHESIS",
-      "template_uri": "https://w3id.org/np/RApmrqOEr4f5bJC2vayrTnzhwnuEfAU_I4Pdg8K5JxeBw",
-      "prefill": {
-        "synthesis": "annefou-marine-heatwave-replication-synthesis",
-        "date": "2026-08-15"
-      },
-      "provenance": {
-        "synthesis": "derived (<org>-<repo>-<step>)",
-        "date": "CITATION.cff"
-      },
-      "published_uri": null
     }
   ],
   "carry_forward": [
@@ -190,13 +176,6 @@
       "from": "05_outcome",
       "into": "06_citation",
       "field": "work"
-    },
-    {
-      "from": "05_outcome",
-      "into": "08_synthesis",
-      "field": "sources",
-      "mode": "uriObjectList",
-      "itemKey": "source"
     }
   ]
 }
