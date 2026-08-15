@@ -33,8 +33,13 @@ oliver-2018-mhw-days-outcome
 ### Plain-text label for the outcome (text input, required)
 
 ```
-Satellite-era marine heatwave day trend validated with independent data and independent software
+Satellite-era (1982-2016) marine heatwave day trend validated with independent data and software; century-scale claims not tested
 ```
+
+The label carries the scope boundary deliberately. Nanopub labels travel alone
+in search results and constellation views, where "validated" without a period
+would read as validating the paper — including the 54 percent century-scale
+figure this outcome does not touch.
 
 <!-- field: study -->
 ### Search for a FORRT replication study (search/select, required)
@@ -94,20 +99,28 @@ the claim itself is strong; the coverage of the original paper is partial.
 ### Describe the overall conclusion about the original claim (textarea, required)
 
 ```
-The claim is validated. Using ESA SST CCI Analysis v3.0 in place of NOAA OI SST
-and XMHW in place of the original authors' own implementation, globally averaged
-marine heatwave days increased by 31.77 days over 1982-2016, against the 30 days
-reported originally - a difference of 6 percent. The two supporting metrics also
-agree: marine heatwave frequency increased by 0.433 events per decade against
-0.45 reported, and mean duration by 1.482 days per decade against 1.3 reported.
-All three trends are significant at the 5 percent level, as in the original.
+WHAT WAS TESTED. One claim of the original paper: its satellite-era result that
+globally averaged marine heatwave days rose by about 30 days per year over
+1982-2016, from a baseline of about 25 days in the 1980s. That claim, and only
+that claim, is what this outcome validates. The paper's better-known abstract
+figure - a 54 percent increase in marine heatwave days - describes a different
+analysis over a different period and was NOT tested here. See the limitations.
+
+RESULT. The claim is validated. Using ESA SST CCI Analysis v3.0 in place of
+NOAA OI SST and XMHW in place of the original authors' own implementation,
+globally averaged marine heatwave days increased by 31.77 days over 1982-2016,
+against the 30 days reported originally - a difference of 6 percent. The two
+supporting metrics also agree: marine heatwave frequency increased by 0.433
+events per decade against 0.45 reported, and mean duration by 1.482 days per
+decade against 1.3 reported. All three trends are significant at the 5 percent
+level, as in the original.
 
 The trend is not an artefact of El Nino Southern Oscillation variability. After
 removing the ENSO signature from the temperature record, the increase is 29.82
 days over the record - 6 percent smaller - and remains significant. This
 reproduces the original's own argument for the same conclusion, independently.
 
-The agreement is notable because both the observational basis and the software
+WHY THE AGREEMENT CARRIES WEIGHT. Both the observational basis and the software
 were replaced. A shared dataset or a shared codebase can carry a common error
 into a reproduction; here neither is shared with the original, so the agreement
 is evidence about the finding rather than about the pipeline.
@@ -153,36 +166,32 @@ all reported digits (scripts/compare_runs.py).
 ### Describe what limits the conclusions of the study (textarea, optional)
 
 ```
-1. Longitude coverage is 93.3 percent, not complete. The reader takes bands 60
-   native cells wide starting every 64, skipping 0.2 degrees every 3.2 degrees,
-   so the analysis grid holds 336 of a possible 360 one-degree columns. The
-   effect was measured rather than assumed: repeating the analysis on random
-   subsamples that drop a further 6.7 percent of columns moves the headline by
-   plus or minus 0.64 days, about 2 percent of a statistic whose trend
-   confidence interval spans 6.35 to 12.94 days per decade. Even a 28 percent
-   sample of longitudes holds the headline to within 0.66 days.
+A. WHAT THIS OUTCOME DOES NOT COVER
 
-2. Marine heatwave intensity trends are weaker here than in the original. The
-   per-cell intensity trend map is close to featureless, with a median of
-   +0.0012 degrees Celsius per decade, whereas the original's equivalent map
-   shows structure across a range ten times larger. This is unresolved: it may
-   reflect a genuine difference between the two temperature records, or a
-   difference between XMHW's mean-intensity metric and the original's. Marine
-   heatwave intensity is not part of the claim under test, so this does not bear
-   on the validation, but it is not explained.
+1. Only the satellite-era claim was tested. The original paper is titled
+   "Longer and more frequent marine heatwaves over the past century" and its
+   central argument spans 1900-2016. This replication tests a 35-year window,
+   1982-2016 - about 30 percent of that span. Validation here says nothing
+   about the other 70 percent.
 
-3. The detection software fails non-deterministically. XMHW raised
-   InvalidIndexError on 2 to 8 percent of latitude blocks across runs, with no
-   pattern in latitude or data coverage, and the same block succeeded when
-   retried. Separately, it cannot assemble a block in which any cell has zero
-   detected events, which appears across the equatorial Pacific once ENSO is
-   removed; that path uses XMHW's single-cell mode instead. Neither affects the
-   results - two complete runs produced identical numbers - but both mean this
-   pipeline cannot be run without retry logic.
+2. The paper's most-quoted number was NOT tested. The abstract reports that
+   from 1925 to 2016 marine heatwave frequency and duration rose by 34 percent
+   and 17 percent, giving a 54 percent increase in annual marine heatwave days.
+   Those figures come from a proxy reconstruction built on monthly gridded sea
+   surface temperature, comparing 1925-1954 against 1987-2016. Nothing in this
+   outcome supports or disputes them.
 
-4. The 1980s baseline is 21.70 days against the original's approximately 25.
-   The difference is not statistically distinguishable given interannual
-   variability, but the point estimate is lower and is reported as such.
+3. This is a limit of the data, not a choice. Marine heatwaves are defined on
+   daily temperatures against a percentile threshold, and no independent daily
+   global sea surface temperature record exists before 1981. ESA SST CCI
+   Analysis v3.0 begins in 1981; the record used here starts 1 January 1982.
+   The century-scale claims cannot be independently replicated with satellite
+   data by anyone, and the absence of a testable independent century record is
+   itself worth stating.
+
+4. The paper's century-long in situ station records - six stations, 1904-2016 -
+   were also not tested. They are point measurements, not a global average, and
+   testing them would be a different study with a different claim.
 
 5. The excess-trend attribution of the original's Figure 3a-c was not attempted.
    That test asks whether marine heatwave trends exceed what mean sea surface
@@ -190,11 +199,65 @@ all reported digits (scripts/compare_runs.py).
    of synthetic detections at roughly 6.7 core-hours per realisation. The
    corresponding maps here carry no significance hatching.
 
-6. The pre-satellite portion of the original paper is untested and untestable by
-   this design. Its century-scale results, including the widely quoted 54
-   percent increase in marine heatwave days, rest on a proxy reconstruction from
-   monthly gridded sea surface temperature. No independent daily global record
-   exists before 1981 against which to test them.
+B. WHAT WORKED
+
+6. The headline statistic replicated to within 6 percent, with independent data
+   and independent software, and the two supporting metrics agreed in sign,
+   magnitude and significance.
+
+7. The ENSO-removal argument replicated: the trend persists, 6 percent smaller,
+   when the ENSO signature is regressed out - reproducing the original's own
+   reasoning by an independent route.
+
+8. The numbers are reproducible. Two complete independent runs, which failed on
+   different latitude blocks and were retried differently, produced identical
+   headline statistics to all reported digits.
+
+9. Figures 2 and 3 were reproduced in the original's layout and can be compared
+   with them directly.
+
+C. WHAT DID NOT WORK, OR REMAINS UNEXPLAINED
+
+10. Marine heatwave intensity trends are far weaker here than in the original.
+    The per-cell intensity trend map is close to featureless, with a median of
+    +0.0012 degrees Celsius per decade, whereas the original's equivalent map
+    (its Figure 3b) shows structure across a range roughly ten times larger.
+    This is unresolved. It may reflect a genuine difference between the two
+    temperature records, or a difference between XMHW's mean-intensity metric
+    and the original's definition. Marine heatwave intensity is not part of the
+    claim under test, so it does not bear on the validation - but it is a
+    disagreement between this replication and the original, and it is not
+    explained.
+
+11. The 1980s baseline is 21.70 days against the original's approximately 25.
+    The difference is not statistically distinguishable given the interannual
+    variability of that window (95 percent confidence interval [14.60, 28.79],
+    t = -1.10, p = 0.31), but the point estimate is lower and is reported as
+    such rather than rounded toward agreement.
+
+12. The detection software fails non-deterministically. XMHW raised
+    InvalidIndexError on 2 to 8 percent of latitude blocks across runs, with no
+    pattern in latitude or data coverage, and the same block succeeded when
+    retried. Separately, it cannot assemble a block in which any cell has zero
+    detected events - which appears across the equatorial Pacific once ENSO is
+    removed - and that path had to use XMHW's single-cell mode instead. Neither
+    affects the reported numbers, but this pipeline cannot be run without retry
+    logic, and that is a property of the independent tooling worth recording.
+
+D. TECHNICAL COVERAGE
+
+13. Longitude coverage is 93.3 percent, not complete. The reader takes bands 60
+    native cells wide starting every 64, skipping 0.2 degrees every 3.2 degrees,
+    so the analysis grid holds 336 of a possible 360 one-degree columns. The
+    effect was measured rather than assumed: repeating the analysis on random
+    subsamples that drop a further 6.7 percent of columns moves the headline by
+    plus or minus 0.64 days, about 2 percent of a statistic whose trend
+    confidence interval spans 6.35 to 12.94 days per decade. Even a 28 percent
+    sample of longitudes holds the headline to within 0.66 days.
+
+14. The analysis grid is 1 degree, coarser than the original's 0.25 degree.
+    Regional detail is correspondingly coarser; the global average, which is
+    what the claim concerns, is not sensitive to this.
 ```
 
 ---
