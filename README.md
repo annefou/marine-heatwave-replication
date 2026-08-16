@@ -16,6 +16,8 @@
 
 This is a self-contained replication of the headline claim of the reference paper. It produces a reproducible computational pipeline, a Zenodo-archived release with a citable DOI, and a FORRT-tagged nanopublication chain on the [Science Live platform](https://platform.sciencelive4all.org).
 
+> **How this replication was found.** The paper, an independent detector ([XMHW](https://doi.org/10.5281/zenodo.7662469)), and independent data (ESA CCI SST) were surfaced by **[Replication Radar](https://openaire-hackathon.netlify.app)** — an MCP over the OpenAIRE Graph — which also scaffolded this repo. Reproduce that discovery flow step by step in the [demo walkthrough](https://openaire-hackathon.netlify.app/demo.html) (▶ [3-min video](https://youtu.be/hVyLafY3Y3E)).
+
 ---
 
 ## Quick start
