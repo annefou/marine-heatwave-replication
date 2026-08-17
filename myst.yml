@@ -18,7 +18,7 @@ project:
     - file: notebooks/06_sst_statistics.ipynb
     - file: notebooks/07_figure2.ipynb
     - file: notebooks/08_figure3.ipynb
-    - file: nanopubs/README.md
+    - file: nanopubs/PUBLISHED.md
 site:
   title: "marine-heatwave-replication"
 # IMPORTANT: do NOT set base_url here — MyST silently ignores the key.
